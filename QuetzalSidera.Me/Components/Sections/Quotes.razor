@@ -1,0 +1,48 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@rendermode InteractiveServer
+@inject AppState AppState
+@inject ContentDataService ContentDataService
+<!-- 启示录 -->
+<section id="@_sectionData?.SectionAnchor">
+    <h2><i class="@_sectionData?.SectionPictureCss"></i>
+        <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+    </h2>
+    <p class="section-intro">
+        <Text TextValue="@_sectionData?.SectionComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+    </p>
+    <div class="quote-grid">
+        @foreach (var card in _cardData ?? [])
+        {
+            <a href="@card.CardLink" class="quote-card">
+                <p class="quote-text">
+                    <Text TextValue="@card.CardContent.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                </p>
+                <p class="quote-author">
+                    <Text TextValue="@("—— " + card.CardComment.ToLangString(AppState.LangTypeInstance))"
+                          AnimationType="fade"></Text>
+                </p>
+            </a>
+        }
+    </div>
+</section>
+
+@code
+{
+    SectionModel? _sectionData;
+    List<QuotesCardModel>? _cardData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.RootPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs == ConfigData.Quotes.SectionTitle[LangType.EnUs]);
+        _cardData = _sectionData?.Cards?.Select(wrappedCard => wrappedCard.WrappedQuotesCard??new QuotesCardModel()).ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+}

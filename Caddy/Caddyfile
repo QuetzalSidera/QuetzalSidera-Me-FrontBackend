@@ -1,0 +1,45 @@
+# 实际提供服务的容器均开放8080端口，因为在本地测试运行时，申请占用80（HTTP）端口可能遇到权限问题
+# Caddy容器运行时监听宿主机80 443端口
+
+# 全局配置 - 使用 ZeroSSL 作为 ACME CA
+{
+    acme_ca https://acme.zerossl.com/v2/DV90
+    email ...
+}
+
+# 主域名站点
+http://quetzalsidera.me {
+    redir https://quetzalsidera.me permanent
+}
+
+https://quetzalsidera.me {
+    reverse_proxy Quetzalsidera.Me:8080
+}
+
+
+# WWW 子域名重定向到主域名
+http://www.quetzalsidera.me {
+    redir https://www.quetzalsidera.me permanent
+}
+
+https://www.quetzalsidera.me {
+    reverse_proxy Quetzalsidera.Me:8080
+}
+
+# 开放平台 API 服务
+http://api.quetzalsidera.me {
+    redir https://api.quetzalsidera.me permanent
+}
+
+https://api.quetzalsidera.me {
+    reverse_proxy Api.Quetzalsidera.Me:8080
+}
+
+# 在线聊天
+http://chat.quetzalsidera.me {
+    redir https://chat.quetzalsidera.me permanent
+}
+
+https://chat.quetzalsidera.me {
+    reverse_proxy Chat.Quetzalsidera.Me:8080
+}

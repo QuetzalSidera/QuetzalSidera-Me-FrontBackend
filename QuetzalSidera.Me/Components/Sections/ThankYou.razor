@@ -1,0 +1,59 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Tools
+
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Protobuf.Shared.Text
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@inject ContentDataService ContentDataService
+@rendermode InteractiveServer
+@inject AppState AppState
+
+<!-- 个人致谢 -->
+<section id="@_sectionData?.SectionAnchor">
+    <h2><i class="@_sectionData?.SectionPictureCss"></i>
+        <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+    </h2>
+    <p class="section-intro">
+        <Text TextValue="@_sectionData?.SectionComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+    </p>
+
+    @foreach (var card in _cardData ?? [])
+    {
+        <div class="thank-you-card">
+            <div class="card">
+                <h3>
+                    <Text TextValue="@card.CardTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+                </h3>
+                @foreach (var paragraph in card.CardContent)
+                {
+                    <p class="thank-you-paragraph">
+                        <Text TextValue="@paragraph.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                    </p>
+                }
+
+                <p class="thank-you-author">
+                    <Text TextValue="@("————" + card.CardContentComment.ToLangString(AppState.LangTypeInstance))"
+                          AnimationType="scale"></Text>
+                </p>
+            </div>
+        </div>
+    }
+</section>
+
+@code{
+    SectionModel? _sectionData;
+    List<ThankYouCardModel>? _cardData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.ThankYouPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs==ConfigData.ThankYou.SectionTitle[LangType.EnUs]);
+        _cardData = _sectionData?.Cards?.Select(wrappedCard => wrappedCard.WrappedThankYouCard ?? new ThankYouCardModel()).ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+}
+    
+    

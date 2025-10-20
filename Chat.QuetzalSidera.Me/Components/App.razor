@@ -1,0 +1,45 @@
+﻿@using Chat.QuetzalSidera.Me.AppState
+@using Grpc.Share.Config.Chat
+@using Grpc.Share.Tools
+@using Chat.QuetzalSidera.Me.Components.Components
+@inject AppState AppStateInstance
+
+<!DOCTYPE html>
+<html lang="@AppStateInstance.CurrentLang.ToHtmlLang()">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <title>
+        @ConfigData.LangUtils.Title.ToTextModel().ToLangString(AppStateInstance.CurrentLang)
+    </title>
+
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]"/>
+    <link rel="stylesheet" href="css/Chat.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <ImportMap/>
+    <link rel="icon" type="image/png" href="img/Logo.png"/>
+    <HeadOutlet/>
+</head>
+
+<body>
+<Routes/>
+<script src="_framework/blazor.web.js"></script>
+<script src="js/chat.js"></script>
+</body>
+
+</html>
+
+@code{
+
+    protected override void OnInitialized()
+    {
+        AppStateInstance.OnLanguageChanged += StateChanged;
+    }
+    private async Task StateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

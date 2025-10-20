@@ -1,0 +1,17 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.HtmlHeader.HtmlHeader";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Shared/Text.proto";
+
+service HtmlHeader {
+  rpc GetHtmlHeader (google.protobuf.Empty) returns (HtmlHeaderDto);
+  rpc ModifyHtmlHeader(HtmlHeaderDto)returns(shared.Status);
+}
+
+message HtmlHeaderDto{
+  shared.Text title = 1;
+  string icon_link = 2;
+}

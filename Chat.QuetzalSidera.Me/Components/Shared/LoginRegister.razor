@@ -1,0 +1,1011 @@
+@using System.Text.RegularExpressions
+@using Chat.QuetzalSidera.Me.AppState
+@using Chat.QuetzalSidera.Me.Components.Components
+@using Chat.QuetzalSidera.Me.Helper
+@using Chat.QuetzalSidera.Me.Models
+@using Chat.QuetzalSidera.Me.Service
+@using Grpc.Share.Protos.ChatModels
+@using Grpc.Share.Tools
+@using static Grpc.Share.Config.Chat.ConfigData.LangUtils;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@rendermode InteractiveServer
+@inject ChatService ChatService
+@inject ProtectedLocalStorage ProtectedLocalStorage
+@inject AppState AppStateInstance
+<div class="login-register-dialog"
+     style="display: @((AppStateInstance.ShowLoginDialog == AppState.DialogEnum.Login || AppStateInstance.ShowLoginDialog == AppState.DialogEnum.DeleteConfirm) ? "flex" : "none");">
+    <div class="login-dialog-content">
+        <div class="login-dialog-header">
+            <h3 class="login-dialog-title">
+                @if (IsDelete)
+                {
+                    @switch (Mode)
+                    {
+                        case ModeEnum.PasswordLogin:
+                        case ModeEnum.VerifyCodeLogin:
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@DeleteAccountTitle.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            break;
+                    }
+                }
+                else
+                {
+                    @switch (Mode)
+                    {
+                        case ModeEnum.PasswordLogin:
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@LoginAccount.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            break;
+                        case ModeEnum.Register:
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@RegisterAccount.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            break;
+                        case ModeEnum.VerifyCodeLogin:
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@VerifyCodeLogin.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            break;
+                    }
+                }
+            </h3>
+            <button class="btn-close" @onclick="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="login-form">
+            @switch (Mode)
+            {
+                case ModeEnum.PasswordLogin:
+                    <div class="form-group">
+                        <label class="form-label">
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@Email.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                        </label>
+                        <input type="text"
+                               class="@("check-form-input" + (_isValidMailBoxPasswordLogin ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterEmail.ToLangString(AppStateInstance.CurrentLang)"
+                               @onchange="PasswordLoginMailboxOnChange"
+                               value="@PasswordLoginForm.Email"
+                               disabled="@IsLoading"/>
+                        @if (!_isValidMailBoxPasswordLogin)
+                        {
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@InvalidEmail.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </label>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@Password.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <input type="password"
+                               class="@("check-form-input" + ((_passwordStatusPasswordLogin == PasswordStatus.Ok) ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterPassword.ToLangString(AppStateInstance.CurrentLang)"
+                               @oninput="PasswordLoginPasswordOnInput"
+                               value="@PasswordLoginForm.Password"
+                               disabled="@IsLoading"/>
+                        @if (_passwordStatusPasswordLogin != PasswordStatus.Ok)
+                        {
+                            var dictToShow = _passwordStatusPasswordLogin == PasswordStatus.InvalidPassword ? RequiredField : LoginError;
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@dictToShow.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </label>
+                        }
+                    </div>
+                    <button class="btn-submit" @onclick="HandleSubmit"
+                            disabled="@_disableSubmitPasswordLogin">
+                        @if (IsDelete)
+                        {
+                            <ChatText
+                                TextValue="@ConfirmDelete.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade" PictureCss="fas fa-user-minus"
+                                PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+                        }
+                        else
+                        {
+                            <ChatText
+                                TextValue="@LoginButton.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade" PictureCss="fas fa-sign-in-alt"
+                                PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+                        }
+                    </button>
+                    @if (IsDelete)
+                    {
+                        <label class="btn-checkbox-container">
+                            <label class="button-prompt">
+                                @DeleteWarning.ToLangString(AppStateInstance.CurrentLang)
+                            </label>
+                            <label class="btn-checkbox-group">
+                                <input type="checkbox" class="custom-checkbox" @oninput="PasswordLoginConfirmOnInput"
+                                       checked="@PasswordLoginForm.Confirm">
+                                <span
+                                    class="checkbox-base"></span>@Acknowledge.ToLangString(AppStateInstance.CurrentLang)
+                            </label>
+                        </label>
+                    }
+                    else
+                    {
+                        <label class="btn-checkbox-group">
+                            <input type="checkbox" class="custom-checkbox" @oninput="PasswordLoginConfirmOnInput"
+                                   checked="@PasswordLoginForm.Confirm"/>
+                            <span class="checkbox-base"></span>
+                            <div class="checkbox-text">
+                                @AgreementRead.ToLangString(AppStateInstance.CurrentLang)
+                                <a href="/static/declare.html" target="_blank">
+                                    @UserAgreementPrivacy.ToLangString(AppStateInstance.CurrentLang)
+                                </a>
+                            </div>
+                        </label>
+                    }
+
+                    break;
+                case ModeEnum.Register:
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@Nickname.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <input type="text"
+                               class="@("check-form-input" + (_isValidNickNameRegister ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterNickname.ToLangString(AppStateInstance.CurrentLang)"
+                               @oninput="RegisterNickNameOnInput"
+                               value="@RegisterForm.NickName"/>
+                        @if (!_isValidNickNameRegister)
+                        {
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@RequiredField.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </label>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@Email.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <input type="email"
+                               class="@("check-form-input" + ((_isValidMailBoxRegister == RegisterMailBoxStatus.Ok) ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterEmail.ToLangString(AppStateInstance.CurrentLang)"
+                               @onchange="RegisterMailBoxOnChange"
+                               value="@RegisterForm.Email"/>
+                        @if (_isValidMailBoxRegister != RegisterMailBoxStatus.Ok)
+                        {
+                            var dictToShow = _isValidMailBoxRegister == RegisterMailBoxStatus.InvalidMailBox ? InvalidEmail : EmailOrCodeError;
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@dictToShow.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+
+                            </label>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@Password.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+
+                        </label>
+                        <input type="password"
+                               class="@("check-form-input" + (_isValidPasswordRegister ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterPassword.ToLangString(AppStateInstance.CurrentLang)"
+                               @oninput="RegisterPasswordOnInput"
+                               value="@RegisterForm.Password"/>
+                        @if (!_isValidPasswordRegister)
+                        {
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@RequiredField.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </label>
+                        }
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@ConfirmPassword.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <input type="password"
+                               class="@("check-form-input" + (_isSamePasswordRegister ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@PleaseConfirmYourPassword.ToLangString(AppStateInstance.CurrentLang)"
+                               @oninput="RegisterVerifyPasswordOnInput"
+                               value="@RegisterForm.PasswordVerify"/>
+                        @if (!_isSamePasswordRegister)
+                        {
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@PasswordMismatch.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </label>
+                        }
+                    </div>
+                    <div class="valid-code-input-group">
+                        <label class="valid-code-input-label">
+                            <ChatText
+                                TextValue="@VerificationCode.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <div class="valid-code-input-btn-group">
+                            <input type="text"
+                                   class="@("check-form-input" + (_isValidVerifyCodeRegister ? " correct-form-input" : " error-form-input"))"
+                                   @oninput="RegisterVerifyCodeOnInput" value="@RegisterForm.VerifyCode"
+                                   placeholder="@EnterVerificationCode.ToLangString(AppStateInstance.CurrentLang)"/>
+
+                            <button class="valid-code-input-btn btn-submit" @onclick="RequestVerifyCode"
+                                    disabled="@_disableVerifyRequestRegister">
+                                <ChatText
+                                    TextValue="@(_countDowningRegister
+                                                   ? (ResendCode.ToLangString(AppStateInstance.CurrentLang) + "(" + _registerTimer?.RemainingSeconds + ")")
+                                                   : (SendCode.ToLangString(AppStateInstance.CurrentLang)))"
+                                    AnimationType="slide"></ChatText>
+                            </button>
+
+                        </div>
+                    </div>
+                    <button class="btn-submit" @onclick="HandleSubmit"
+                            disabled="@_disableSubmitRegister">
+                        <ChatText
+                            TextValue="@RegisterButton.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade" PictureCss="fas fa-user-plus"
+                            PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+                    </button>
+                    <label class="btn-checkbox-group">
+                        <input type="checkbox" class="custom-checkbox" @oninput="RegisterConfirmOnInput"
+                               checked="@RegisterForm.Confirm"/>
+                        <span class="checkbox-base"></span>
+                        <div class="checkbox-text">
+                            @AgreementRead.ToLangString(AppStateInstance.CurrentLang)
+                            <a href="/static/declare.html" target="_blank">
+                                @UserAgreementPrivacy.ToLangString(AppStateInstance.CurrentLang)
+                            </a>
+                        </div>
+                    </label>
+                    break;
+                case ModeEnum.VerifyCodeLogin:
+                    <div class="form-group">
+                        <label class="form-label">
+                            <ChatText
+                                TextValue="@Email.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <input type="email"
+                               class="@("check-form-input" + (_isValidMailBoxVerifyCodeLogin == VerifyCodeLoginMailBoxStatus.Ok ? " correct-form-input" : " error-form-input"))"
+                               placeholder="@EnterEmail.ToLangString(AppStateInstance.CurrentLang)"
+                               @onchange="VerifyCodeLoginMailboxOnChange"
+                               value="@VerifyCodeLoginForm.Email"/>
+                        @if (_isValidMailBoxVerifyCodeLogin != VerifyCodeLoginMailBoxStatus.Ok)
+                        {
+                            var dictToShow = _isValidMailBoxVerifyCodeLogin == VerifyCodeLoginMailBoxStatus.InvalidEmail ? InvalidEmail : EmailOrCodeError;
+                            <label class="check-form-message">
+                                <ChatText
+                                    TextValue="@dictToShow.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+
+                            </label>
+                        }
+                    </div>
+                    <div class="valid-code-input-group">
+                        <label class="valid-code-input-label">
+                            <ChatText
+                                TextValue="@VerificationCode.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </label>
+                        <div class="valid-code-input-btn-group">
+                            <input type="text"
+                                   class="@("check-form-input" + (_isValidVerifyCodeVerifyCodeLogin ? " correct-form-input" : " error-form-input"))"
+                                   @oninput="VerifyCodeLoginVerifyCodeOnInput" value="@VerifyCodeLoginForm.VerifyCode"
+                                   placeholder="@EnterVerificationCode.ToLangString(AppStateInstance.CurrentLang)"/>
+
+                            <button class="valid-code-input-btn btn-submit" @onclick="RequestVerifyCode"
+                                    disabled="@_disableVerifyCodeRequestVerifyCodeLogin">
+                                <ChatText
+                                    TextValue="@(_countDowningVerifyCodeLogin
+                                                   ? (ResendCode.ToLangString(AppStateInstance.CurrentLang) + "(" + _verifyCodeLoginTimer?.RemainingSeconds + ")")
+                                                   : SendCode.ToLangString(AppStateInstance.CurrentLang))"
+                                    AnimationType="fade"></ChatText>
+                            </button>
+
+                        </div>
+                    </div>
+                    <button class="btn-submit" @onclick="HandleSubmit"
+                            disabled="@_disableSubmitVerifyCodeLogin">
+                        @if (IsDelete)
+                        {
+                            <ChatText
+                                TextValue="@ConfirmDelete.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade" PictureCss="fas fa-user-minus"
+                                PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+                        }
+                        else
+                        {
+                            <ChatText
+                                TextValue="@LoginButton.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade" PictureCss="fas fa-sign-in-alt"
+                                PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+                        }
+                    </button>
+                    @if (IsDelete)
+                    {
+                        <label class="btn-checkbox-container">
+                            <label class="button-prompt">
+                                @DeleteWarning.ToLangString(AppStateInstance.CurrentLang)
+                            </label>
+                            <label class="btn-checkbox-group">
+                                <input type="checkbox" class="custom-checkbox"
+                                       @oninput="VerifyCodeLoginConfirmOnInput"
+                                       checked="@VerifyCodeLoginForm.Confirm">
+                                <span
+                                    class="checkbox-base"></span>@Acknowledge.ToLangString(AppStateInstance.CurrentLang)
+                            </label>
+                        </label>
+                    }
+                    else
+                    {
+                        <label class="btn-checkbox-group">
+                            <input type="checkbox" class="custom-checkbox" @oninput="VerifyCodeLoginConfirmOnInput"
+                                   checked="@VerifyCodeLoginForm.Confirm"/>
+                            <span class="checkbox-base"></span>
+                            <div class="checkbox-text">
+                                @AgreementRead.ToLangString(AppStateInstance.CurrentLang)
+                                <a href="/static/declare.html" target="_blank">
+                                    @UserAgreementPrivacy.ToLangString(AppStateInstance.CurrentLang)
+                                </a>
+                            </div>
+                        </label>
+                    }
+
+                    break;
+            }
+
+            <div class="login-options">
+                <button class="switch-mode" @onclick="SwitchMode">
+                    @if (IsDelete)
+                    {
+                        @switch (Mode)
+                        {
+                            case ModeEnum.PasswordLogin:
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@CodeLogin.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                                break;
+                            case ModeEnum.VerifyCodeLogin:
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@PasswordLogin.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        @switch (Mode)
+                        {
+                            case ModeEnum.PasswordLogin:
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@NoAccountRegister.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                                break;
+                            case ModeEnum.Register:
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@HaveAccountLogin.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                                break;
+                            case ModeEnum.VerifyCodeLogin:
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@PasswordLogin.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                                break;
+                        }
+                    }
+                </button>
+                @if (!IsDelete)
+                {
+                    @if (Mode == ModeEnum.PasswordLogin)
+                    {
+                        <button class="switch-mode" @onclick="() => { Mode = ModeEnum.VerifyCodeLogin; }">
+                            <ChatText
+                                TextValue="@CodeLogin.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ReSharper disable RedundantDefaultMemberInitializer *@
+
+@code {
+
+    /// <summary>
+    /// 关闭窗口时回调函数，返回true=>登录/注册成功，返回false=>登录/注册取消
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter] public bool IsDelete { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        AppStateInstance.OnLanguageChanged += StateChanged;
+    }
+
+    private async Task StateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private enum ModeEnum
+    {
+        PasswordLogin,
+        Register,
+        VerifyCodeLogin,
+    }
+
+    private PasswordLoginInfo PasswordLoginForm { get; set; } = new();
+    private VerifyCodeLoginInfo VerifyCodeLoginForm { get; set; } = new();
+    private RegisterInfo RegisterForm { get; set; } = new();
+    private ModeEnum Mode { get; set; } = ModeEnum.PasswordLogin;
+    private bool IsLoading { get; set; } = false;
+
+
+    /// <summary>
+    /// 常用的邮箱验证正则表达式
+    /// </summary>
+    const string Pattern =
+        @"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+
+
+    #region Register
+
+    private enum RegisterMailBoxStatus
+    {
+        Ok,
+        ErrorMailBox,
+        InvalidMailBox
+    }
+
+    bool _isValidNickNameRegister = true;
+    bool _isValidPasswordRegister = true;
+    bool _isSamePasswordRegister = true;
+    RegisterMailBoxStatus _isValidMailBoxRegister = RegisterMailBoxStatus.Ok;
+    bool _disableSubmitRegister = true;
+    bool _disableVerifyRequestRegister = true;
+    bool _isValidVerifyCodeRegister = true;
+    private CountDownTimer? _registerTimer = null;
+    bool _countDowningRegister = false;
+
+    /// <summary>
+    /// 换表时触发，不重置倒计时
+    /// </summary>
+    private void ReInitRegisterStatus()
+    {
+        RegisterForm = new RegisterInfo();
+        _isValidNickNameRegister = true;
+        _isValidPasswordRegister = true;
+        _isSamePasswordRegister = true;
+        _isValidMailBoxRegister = RegisterMailBoxStatus.Ok;
+        _disableSubmitRegister = !RegisterForm.Confirm;
+        _disableVerifyRequestRegister = true;
+        _isValidVerifyCodeRegister = true;
+        StateHasChanged();
+    }
+
+    private void RegisterNickNameOnInput(ChangeEventArgs args)
+    {
+        RegisterForm.NickName = (args.Value as string) ?? string.Empty;
+        _isValidNickNameRegister = RegisterForm.NickName != string.Empty;
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+    private void RegisterPasswordOnInput(ChangeEventArgs args)
+    {
+        RegisterForm.Password = (args.Value as string) ?? string.Empty;
+        _isValidPasswordRegister = RegisterForm.Password != string.Empty;
+        _isSamePasswordRegister = RegisterForm.Password == RegisterForm.PasswordVerify;
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+    private void RegisterMailBoxOnChange(ChangeEventArgs args)
+    {
+        RegisterForm.Email = (args.Value as string) ?? string.Empty;
+        _isValidMailBoxRegister = Regex.IsMatch(RegisterForm.Email, Pattern) ? RegisterMailBoxStatus.Ok : RegisterMailBoxStatus.InvalidMailBox;
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+    private void RegisterVerifyPasswordOnInput(ChangeEventArgs args)
+    {
+        RegisterForm.PasswordVerify = (args.Value as string) ?? string.Empty;
+        _isSamePasswordRegister = RegisterForm.Password == RegisterForm.PasswordVerify;
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+    private void RegisterVerifyCodeOnInput(ChangeEventArgs args)
+    {
+        RegisterForm.VerifyCode = (args.Value as string) ?? string.Empty;
+        _isValidVerifyCodeRegister = RegisterForm.VerifyCode != string.Empty;
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+    private void RegisterConfirmOnInput(ChangeEventArgs args)
+    {
+        RegisterForm.Confirm = args.Value?.ToString() == "True";
+        RegisterButtonCheck();
+        StateHasChanged();
+    }
+
+
+    private void RegisterButtonCheck()
+    {
+        _disableVerifyRequestRegister = IsLoading || _countDowningRegister || !Regex.IsMatch(RegisterForm.Email, Pattern);
+        _disableSubmitRegister = !RegisterForm.Confirm;
+    }
+
+
+    private async Task RegisterOnTick()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RegisterOnEnd()
+    {
+        await InvokeAsync(() =>
+        {
+            _countDowningRegister = false;
+            _disableVerifyRequestRegister = false;
+            StateHasChanged();
+            _registerTimer?.Dispose();
+        });
+    }
+
+    #endregion
+
+    #region PasswordLogin
+
+    private enum PasswordStatus
+    {
+        Ok,
+        InvalidPassword,
+        ErrorPasswordOrEmail,
+    }
+
+    PasswordStatus _passwordStatusPasswordLogin = PasswordStatus.Ok;
+    bool _isValidMailBoxPasswordLogin = true;
+    bool _disableSubmitPasswordLogin = true;
+
+    /// <summary>
+    /// 换表时触发
+    /// </summary>
+    private void ReInitPasswordStatus()
+    {
+        PasswordLoginForm = new PasswordLoginInfo();
+        _passwordStatusPasswordLogin = PasswordStatus.Ok;
+        _isValidMailBoxPasswordLogin = true;
+        _disableSubmitPasswordLogin = !PasswordLoginForm.Confirm;
+        StateHasChanged();
+    }
+
+    private void PasswordLoginMailboxOnChange(ChangeEventArgs args)
+    {
+        PasswordLoginForm.Email = (args.Value as string) ?? string.Empty;
+        _isValidMailBoxPasswordLogin = Regex.IsMatch(PasswordLoginForm.Email, Pattern);
+        PasswordLoginButtonCheck();
+        StateHasChanged();
+    }
+
+    private void PasswordLoginPasswordOnInput(ChangeEventArgs args)
+    {
+        PasswordLoginForm.Password = (args.Value as string) ?? string.Empty;
+        _passwordStatusPasswordLogin = PasswordLoginForm.Password != string.Empty ? PasswordStatus.Ok : PasswordStatus.InvalidPassword;
+        PasswordLoginButtonCheck();
+        StateHasChanged();
+    }
+
+    private void PasswordLoginConfirmOnInput(ChangeEventArgs args)
+    {
+        PasswordLoginForm.Confirm = args.Value?.ToString() == "True";
+        PasswordLoginButtonCheck();
+        StateHasChanged();
+    }
+
+
+    private void PasswordLoginButtonCheck()
+    {
+        _disableSubmitPasswordLogin = !PasswordLoginForm.Confirm;
+    }
+
+    #endregion
+
+    #region VerifyCodeLogin
+
+    private enum VerifyCodeLoginMailBoxStatus
+    {
+        Ok,
+        InvalidEmail,
+        ErrorVerifyCode,
+    }
+
+    VerifyCodeLoginMailBoxStatus _isValidMailBoxVerifyCodeLogin = VerifyCodeLoginMailBoxStatus.Ok;
+    bool _disableSubmitVerifyCodeLogin = true;
+    bool _disableVerifyCodeRequestVerifyCodeLogin = true;
+    bool _isValidVerifyCodeVerifyCodeLogin = true;
+    private CountDownTimer? _verifyCodeLoginTimer = null;
+    bool _countDowningVerifyCodeLogin = false;
+
+    /// <summary>
+    /// 换表时触发
+    /// </summary>
+    private void ReInitVerifyCodeLoginStatus()
+    {
+        VerifyCodeLoginForm = new VerifyCodeLoginInfo();
+        _isValidMailBoxVerifyCodeLogin = VerifyCodeLoginMailBoxStatus.Ok;
+        _disableSubmitVerifyCodeLogin = !RegisterForm.Confirm;
+        _disableVerifyCodeRequestVerifyCodeLogin = true;
+        _isValidVerifyCodeVerifyCodeLogin = true;
+        StateHasChanged();
+    }
+
+    private void VerifyCodeLoginMailboxOnChange(ChangeEventArgs args)
+    {
+        VerifyCodeLoginForm.Email = (args.Value as string) ?? string.Empty;
+        _isValidMailBoxVerifyCodeLogin = Regex.IsMatch(VerifyCodeLoginForm.Email, Pattern) ? VerifyCodeLoginMailBoxStatus.Ok : VerifyCodeLoginMailBoxStatus.InvalidEmail;
+        VerifyCodeLoginButtonCheck();
+        StateHasChanged();
+    }
+
+    private void VerifyCodeLoginVerifyCodeOnInput(ChangeEventArgs args)
+    {
+        VerifyCodeLoginForm.VerifyCode = (args.Value as string) ?? string.Empty;
+        _isValidVerifyCodeVerifyCodeLogin = VerifyCodeLoginForm.VerifyCode != string.Empty;
+        VerifyCodeLoginButtonCheck();
+        StateHasChanged();
+    }
+
+    private void VerifyCodeLoginConfirmOnInput(ChangeEventArgs args)
+    {
+        VerifyCodeLoginForm.Confirm = args.Value?.ToString() == "True";
+        VerifyCodeLoginButtonCheck();
+        StateHasChanged();
+    }
+
+    private void VerifyCodeLoginButtonCheck()
+    {
+        _disableSubmitVerifyCodeLogin = !VerifyCodeLoginForm.Confirm;
+        _disableVerifyCodeRequestVerifyCodeLogin = IsLoading || _countDowningVerifyCodeLogin || !Regex.IsMatch(VerifyCodeLoginForm.Email, Pattern);
+    }
+
+    private async Task VerifyCodeLoginOnTick()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task VerifyCodeLoginOnEnd()
+    {
+        await InvokeAsync(() =>
+        {
+            _countDowningVerifyCodeLogin = false;
+            _disableVerifyCodeRequestVerifyCodeLogin = false;
+            StateHasChanged();
+            _verifyCodeLoginTimer?.Dispose();
+        });
+    }
+
+    #endregion
+
+    private async Task Close()
+    {
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.None;
+        ResetForm();
+        StateHasChanged();
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private void SwitchMode()
+    {
+        if (!IsDelete)
+        {
+            switch (Mode)
+            {
+                case ModeEnum.VerifyCodeLogin:
+                    Mode = ModeEnum.PasswordLogin;
+                    break;
+                case ModeEnum.Register:
+                    Mode = ModeEnum.PasswordLogin;
+                    break;
+                case ModeEnum.PasswordLogin:
+                    Mode = ModeEnum.Register;
+                    break;
+            }
+        }
+        else
+        {
+            switch (Mode)
+            {
+                case ModeEnum.VerifyCodeLogin:
+                    Mode = ModeEnum.PasswordLogin;
+                    break;
+                case ModeEnum.Register:
+                    Mode = ModeEnum.PasswordLogin;
+                    break;
+                case ModeEnum.PasswordLogin:
+                    Mode = ModeEnum.VerifyCodeLogin;
+                    break;
+            }
+        }
+
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        ReInitPasswordStatus();
+        ReInitRegisterStatus();
+        ReInitVerifyCodeLoginStatus();
+        StateHasChanged();
+    }
+
+
+    private async Task HandleSubmit()
+    {
+        StateHasChanged();
+        ModeEnum mode = Mode;
+        //表单前端验证
+        switch (mode)
+        {
+            case ModeEnum.PasswordLogin:
+                _isValidMailBoxPasswordLogin = Regex.IsMatch(PasswordLoginForm.Email, Pattern);
+                _passwordStatusPasswordLogin = PasswordLoginForm.Password != string.Empty ? PasswordStatus.Ok : PasswordStatus.InvalidPassword;
+                PasswordLoginButtonCheck();
+
+                if (_passwordStatusPasswordLogin != PasswordStatus.Ok || !_isValidMailBoxPasswordLogin || !PasswordLoginForm.Confirm)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
+                StateHasChanged();
+                break;
+            case ModeEnum.VerifyCodeLogin:
+                _isValidMailBoxVerifyCodeLogin = Regex.IsMatch(VerifyCodeLoginForm.Email, Pattern) ? VerifyCodeLoginMailBoxStatus.Ok : VerifyCodeLoginMailBoxStatus.InvalidEmail;
+                _isValidVerifyCodeVerifyCodeLogin = VerifyCodeLoginForm.VerifyCode != string.Empty;
+                VerifyCodeLoginButtonCheck();
+
+                if (_isValidMailBoxVerifyCodeLogin != VerifyCodeLoginMailBoxStatus.Ok || !_isValidVerifyCodeVerifyCodeLogin || !VerifyCodeLoginForm.Confirm)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
+                StateHasChanged();
+                break;
+            case ModeEnum.Register:
+                _isValidNickNameRegister = RegisterForm.NickName != string.Empty;
+                _isValidMailBoxRegister = Regex.IsMatch(RegisterForm.Email, Pattern) ? RegisterMailBoxStatus.Ok : RegisterMailBoxStatus.InvalidMailBox;
+                _isValidPasswordRegister = RegisterForm.Password != string.Empty;
+                _isSamePasswordRegister = RegisterForm.Password == RegisterForm.PasswordVerify;
+                _isValidVerifyCodeRegister = RegisterForm.VerifyCode != string.Empty;
+                RegisterButtonCheck();
+                if (!_isValidNickNameRegister || _isValidMailBoxRegister != RegisterMailBoxStatus.Ok || !_isValidPasswordRegister || !_isSamePasswordRegister || !_isValidVerifyCodeRegister || !RegisterForm.Confirm)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
+                StateHasChanged();
+                break;
+        }
+
+        //通过验证，提交后端
+        IsLoading = true;
+        StateHasChanged();
+        AuthTokenModel authTokenModel = new AuthTokenModel()
+        {
+            IsRegistered = false
+        };
+        bool isValidReturn = false;
+
+        switch (mode)
+        {
+            case ModeEnum.PasswordLogin:
+                UserInfoModel passwordLoginModel = new UserInfoModel()
+                {
+                    MailBox = PasswordLoginForm.Email,
+                    //此处使用UserInfoModel中的明文密码，在后端进行hash
+                    Password = PasswordLoginForm.Password,
+                };
+                (authTokenModel, isValidReturn) = await ChatService.PasswordLoginAsync(passwordLoginModel);
+                break;
+            case ModeEnum.VerifyCodeLogin:
+                UserInfoModel verifyCodeLoginModel = new UserInfoModel()
+                {
+                    MailBox = VerifyCodeLoginForm.Email,
+                };
+                (authTokenModel, isValidReturn) = await ChatService.VerifyCodeLoginAsync(VerifyCodeLoginForm.VerifyCode, verifyCodeLoginModel);
+                break;
+            case ModeEnum.Register:
+                UserInfoModel registerModel = new()
+                {
+                    NickName = RegisterForm.NickName,
+                    MailBox = RegisterForm.Email,
+                    Password = RegisterForm.Password,
+                };
+                (authTokenModel, isValidReturn) = await ChatService.RegisterAsync(RegisterForm.VerifyCode, registerModel);
+                break;
+        }
+
+
+        //后端处理完毕，返回结果
+        IsLoading = false;
+        StateHasChanged();
+        if (!isValidReturn)
+        {
+            //错误结果处理
+            switch (mode)
+            {
+                case ModeEnum.PasswordLogin:
+                    PasswordLoginForm.Password = string.Empty;
+                    _passwordStatusPasswordLogin = PasswordStatus.ErrorPasswordOrEmail;
+                    break;
+                case ModeEnum.VerifyCodeLogin:
+                    VerifyCodeLoginForm.Email = string.Empty;
+                    VerifyCodeLoginForm.VerifyCode = string.Empty;
+                    _isValidMailBoxVerifyCodeLogin = VerifyCodeLoginMailBoxStatus.ErrorVerifyCode;
+                    break;
+                case ModeEnum.Register:
+                    RegisterForm.Email = string.Empty;
+                    RegisterForm.VerifyCode = string.Empty;
+                    _isValidMailBoxRegister = RegisterMailBoxStatus.ErrorMailBox;
+                    break;
+            }
+
+            StateHasChanged();
+        }
+        else
+        {
+            //结果为登录成功
+            if (IsDelete)
+            {
+                //若响应得到的UserGuid与原本的UserGuid相同，则开始注销
+                if (authTokenModel.UserGuid == ChatService.AuthToken.UserGuid)
+                {
+                    //如果是删除帐户验证，则向localStorage写入空AuthToken，同时调用ChatService方法删除
+                    try
+                    {
+                        await ProtectedLocalStorage.SetAsync(AppState.AuthTokenKey, "");
+                        await ProtectedLocalStorage.SetAsync(AppState.UserGuidKey, "");
+                        await ProtectedLocalStorage.SetAsync(AppState.CreateTimestampKey, 0);
+                        await ProtectedLocalStorage.SetAsync(AppState.UserLangKey, "");
+                    }
+                    catch
+                    {
+                        //忽略LocalStorage错误
+                    }
+
+                    //关闭标签，清空表单，触发回调
+                    AppStateInstance.ShowLoginDialog = AppState.DialogEnum.None;
+                    ResetForm();
+                    StateHasChanged();
+                    //将回调参数置为true，通知回调函数账户已删除(删除时回调函数与登录时回调函数不是一个函数)
+                    await VisibleChanged.InvokeAsync(true);
+                }
+                else
+                {
+                    //若响应得到的UserGuid与原本的UserGuid不同，则不注销，避免注销其他人的账号
+                    switch (mode)
+                    {
+                        case ModeEnum.PasswordLogin:
+                            PasswordLoginForm.Password = string.Empty;
+                            _passwordStatusPasswordLogin = PasswordStatus.ErrorPasswordOrEmail;
+                            break;
+                        case ModeEnum.VerifyCodeLogin:
+                            VerifyCodeLoginForm.Email = string.Empty;
+                            VerifyCodeLoginForm.VerifyCode = string.Empty;
+                            _isValidMailBoxVerifyCodeLogin = VerifyCodeLoginMailBoxStatus.ErrorVerifyCode;
+                            break;
+                    }
+
+                    await VisibleChanged.InvokeAsync(false);
+                }
+            }
+            else
+            {
+                //普通登录
+                ChatService.AuthToken = authTokenModel;
+                ChatService.IsAuthed = authTokenModel.IsRegistered;
+                //关闭标签，清空表单，触发回调
+                AppStateInstance.ShowLoginDialog = AppState.DialogEnum.None;
+                ResetForm();
+                StateHasChanged();
+                //将鉴权信息加密写入浏览器存储
+                try
+                {
+                    await ProtectedLocalStorage.SetAsync(AppState.AuthTokenKey, authTokenModel.CookieString);
+                    await ProtectedLocalStorage.SetAsync(AppState.UserGuidKey, authTokenModel.UserGuid);
+                    await ProtectedLocalStorage.SetAsync(AppState.CreateTimestampKey, authTokenModel.CreateTimestamp);
+                }
+                catch
+                {
+                    //忽略LocalStorage错误
+                }
+
+                //将回调参数置为true，通知回调函数账户已登录
+                await VisibleChanged.InvokeAsync(true);
+            }
+        }
+    }
+
+    private async Task RequestVerifyCode()
+    {
+        string registerMailBox = RegisterForm.Email;
+        string verifyCodeLoginMailBox = VerifyCodeLoginForm.Email;
+        switch (Mode)
+        {
+            case ModeEnum.Register:
+                if (_countDowningRegister)
+                    return;
+                _disableVerifyRequestRegister = !Regex.IsMatch(registerMailBox, Pattern);
+                _isValidMailBoxRegister = Regex.IsMatch(registerMailBox, Pattern) ? RegisterMailBoxStatus.Ok : RegisterMailBoxStatus.InvalidMailBox;
+                if (_disableVerifyRequestRegister)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
+                StateHasChanged();
+                _countDowningRegister = true;
+                _registerTimer = new CountDownTimer(60, RegisterOnTick, RegisterOnEnd);
+                RegisterButtonCheck();
+                break;
+            case ModeEnum.VerifyCodeLogin:
+                if (_countDowningVerifyCodeLogin)
+                    return;
+                _disableVerifyCodeRequestVerifyCodeLogin = !Regex.IsMatch(verifyCodeLoginMailBox, Pattern);
+                _isValidMailBoxVerifyCodeLogin = Regex.IsMatch(verifyCodeLoginMailBox, Pattern) ? VerifyCodeLoginMailBoxStatus.Ok : VerifyCodeLoginMailBoxStatus.InvalidEmail;
+                if (_disableVerifyCodeRequestVerifyCodeLogin)
+                {
+                    StateHasChanged();
+                    return;
+                }
+
+                StateHasChanged();
+                _countDowningVerifyCodeLogin = true;
+                _verifyCodeLoginTimer = new CountDownTimer(60, VerifyCodeLoginOnTick, VerifyCodeLoginOnEnd);
+                VerifyCodeLoginButtonCheck();
+                break;
+        }
+
+        StateHasChanged();
+        switch (Mode)
+        {
+            case ModeEnum.Register:
+                await ChatService.GetVerifyCodeRegisterAsync(registerMailBox);
+                break;
+            case ModeEnum.VerifyCodeLogin:
+
+                await ChatService.GetVerifyCodeVerifyCodeLoginAsync(verifyCodeLoginMailBox);
+                break;
+        }
+    }
+
+}

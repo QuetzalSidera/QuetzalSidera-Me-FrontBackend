@@ -1,0 +1,25 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Chat";
+
+package chat;
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Chat/UserInfo.proto";
+import "Share/Protos/Chat/ChatMessage.proto";
+service ChatSessionService{
+  //ChatHistory的Guid为目标用户的Guid
+  rpc MergeChatHistory(ChatHistory)returns(shared.Status);
+  rpc GetChatHistory(AuthToken) returns (ChatHistory);
+  rpc CreateChatSession(AuthToken) returns (ChatSession);
+}
+
+message ChatHistory{
+  string user_guid = 2;//用户Guid
+  repeated ChatSession History = 3;//历史会话列表
+}
+
+message ChatSession{
+  int64  create_timestamp = 1;//创建时间
+  string session_guid = 2;//会话Guid
+  string  title = 3;//会话标题
+  repeated ChatMessage Content = 4;//会话内容
+}

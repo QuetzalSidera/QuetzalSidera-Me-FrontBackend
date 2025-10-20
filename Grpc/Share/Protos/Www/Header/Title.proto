@@ -1,0 +1,17 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.Header.Title";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Shared/Text.proto";
+service Title {
+  rpc GetTitle (google.protobuf.Empty) returns (TitleDto);
+  rpc ModifyTitle(TitleDto)returns(shared.Status);
+}
+
+message TitleDto{
+  string title_picture_css = 1;
+  shared.Text title = 2;
+}
+

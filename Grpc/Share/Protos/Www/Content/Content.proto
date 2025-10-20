@@ -1,0 +1,148 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.Content";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Shared/Text.proto";
+
+service Content {
+  //GET
+  rpc GetLayout(Layout)returns(Layout);
+  //ADD方法的id均留空(string.Empty)，REMOVE与MODIFY不可留空
+
+
+  //ADD REMOVE Subsection
+  rpc AddSubsection(Subsection)returns(shared.Status);
+  rpc RemoveSubsection(Subsection)returns(shared.Status);
+
+  //ADD REMOVE MODIFY Card
+  rpc AddCard(Card)returns(shared.Status);
+  rpc RemoveCard(Card)returns(shared.Status);
+}
+
+message Layout{
+  string path = 1;
+  repeated Section sections = 2;
+}
+
+message Section{
+  string path = 1;
+  shared.Text section_title = 2;
+  string section_anchor = 9;
+  string section_picture_css = 3;
+  shared.Text section_comment = 4;
+  ChildType child_type = 5;
+  CardType card_type = 6;
+  repeated Card cards = 7;
+  repeated Subsection subsections = 8;
+}
+
+
+message Subsection{
+  string path = 1;
+  shared.Text section_title = 2;
+  shared.Text subsection_title = 3;
+  string subsection_picture_css = 4;
+  shared.Text subsection_comment = 5;
+  CardType card_type = 6;
+  repeated Card cards = 8;
+}
+
+
+message Card{
+  string path = 1;
+  shared.Text section_title = 2;
+  optional shared.Text subsection_title = 3;
+  shared.Text card_title = 5;
+  CardType card_type = 4;
+  AboutCard about_card = 7;
+  ProjectsCard project_card = 8;
+  TechStackCard tech_stack_card = 9;
+  HobbiesCard hobbies_card = 10;
+  QuotesCard quotes_card = 11;
+  FriendsCard friends_card = 12;
+  ThankYouCard thank_you_card = 13;
+  
+  repeated string add_ons = 18;
+}
+
+enum ChildType{
+  SUBSECTION = 0;
+  CARD = 1;
+  UNDEFINED = 2;
+}
+
+//卡片模版
+enum CardType{
+  NAV_SECTION_ABOUT = 0;        // 关于我 card_content/card_content_en
+  NAV_SECTION_PROJECTS = 1;     // 项目 complete_status card_title_picture_css card_title/card_title_en card_content/card_content_en card_comment/card_comment_en card_link 
+  NAV_SECTION_TECH_STACK = 2;       // 技术栈 card_title/card_title_en card_title_picture_css manage_status card_link
+  NAV_SECTION_HOBBIES = 3;      // 爱好 card_title/card_title_en card_picture_url card_comment/card_comment_en card_comment_picture_css card_link
+  NAV_SECTION_QUOTES = 4;       // 启示录 card_content/card_content_en card_comment/card_comment_en card_link
+  NAV_SECTION_FRIENDS = 5;      // 友链 card_picture_url card_title/card_title_en card_comment/card_comment_en
+  NAV_SECTION_THANK_YOU = 6;//致谢
+  NAV_SECTION_UNDEFINED = 7;
+}
+
+message AboutCard{
+  repeated shared.Text card_content = 7;
+}
+message ProjectsCard{
+  CompleteStatus complete_status = 15;
+  string card_picture_css = 12;
+  shared.Text card_title = 5;
+  shared.Text card_content = 7;
+  shared.Text card_comment = 9;
+  string card_link = 17;//重要
+}
+
+message TechStackCard{
+  shared.Text card_title = 5;
+  string card_picture_css = 12;
+  ManageStatus manage_status = 16;
+  string card_link = 17;//重要
+}
+message HobbiesCard{
+  shared.Text card_title = 5;
+  string card_picture_url = 11;
+  shared.Text card_comment = 9;
+  optional string card_picture_css = 12;
+  string card_link = 17;//重要
+}
+message QuotesCard{
+  shared.Text card_content = 7;
+  shared.Text card_comment = 9; //示例“佚名” 不是“—— 佚名”
+  string card_link = 17;//重要
+}
+message FriendsCard{
+  shared.Text card_title = 5;
+  string card_picture_url = 11;
+  shared.Text card_comment = 9;
+  string card_link = 17;//重要
+}
+message ThankYouCard{
+  shared.Text card_title = 5;
+  repeated shared.Text card_content = 7;
+  shared.Text card_content_comment = 8;
+}
+
+
+enum CompleteStatus{
+  COMPLETE_STATUS_ASIDE = 0;//搁置
+  COMPLETE_STATUS_FINISHED = 1;//完成
+  COMPLETE_STATUS_ON_GOING = 2;//正在进行
+  COMPLETE_STATUS_PLANNING = 3;//计划中
+  COMPLETE_STATUS_DREAMING = 4;//幻想时间
+  COMPLETE_STATUS_UNDEFINED = 5;
+}
+
+enum ManageStatus{
+  MANAGE_STATUS_PROFICIENT = 0;//精通
+  MANAGE_STATUS_EXPERT = 1;//熟练
+  MANAGE_STATUS_COMPETENT = 2;//熟悉
+  MANAGE_STATUS_NOVICE = 3;//了解
+  MANAGE_STATUS_PLANNING = 4;//计划中
+  MANAGE_STATUS_DREAMING = 5;//幻想时间
+  MANAGE_STATUS_UNDEFINED = 6;
+}

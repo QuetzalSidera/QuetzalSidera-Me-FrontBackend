@@ -1,0 +1,107 @@
+﻿services:
+  #  API前端
+  Api.Quetzalsidera.Me:
+    image: api.quetzalsidera.me
+    build:
+      context: .
+      dockerfile: Api.QuetzalSidera.Me/Dockerfile
+    environment:
+      - KEY_VOLUME_PATH=/app/Data/Key
+      - LOG_VOLUME_PATH=/app/Data/Logs
+    volumes:
+      - api_key_data:/app/Data/Key
+      - api_log_data:/app/Data/Logs
+    networks:
+      - front-network
+  
+  #  网页聊天前端
+  Chat.Quetzalsidera.Me:
+    image: chat.quetzalsidera.me
+    build:
+      context: .
+      dockerfile: Chat.QuetzalSidera.Me/Dockerfile
+    environment:
+      - KEY_VOLUME_PATH=/app/Data/Key
+      - LOG_VOLUME_PATH=/app/Data/Logs
+    volumes:
+      - chat_key_data:/app/Data/Key
+      - chat_log_data:/app/Data/Logs
+    networks:
+      - front-network
+  
+  
+  #  个人博客前端
+  Quetzalsidera.Me:
+    image: quetzalsidera.me
+    build:
+      context: .
+      dockerfile: QuetzalSidera.Me/Dockerfile
+    environment:
+      - KEY_VOLUME_PATH=/app/Data/Key
+      - LOG_VOLUME_PATH=/app/Data/Logs
+    volumes:
+      - www_key_data:/app/Data/Key
+      - www_log_data:/app/Data/Logs
+    networks:
+      - front-network
+  
+  #  后端
+  backend:
+    image: backend
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    environment:
+      - CHAT_VOLUME_PATH=/app/Data/Chat
+      - WWW_VOLUME_PATH=/app/Data/Www
+      - API_VOLUME_PATH=/app/Data/Api
+      - LOG_VOLUME_PATH=/app/Data/Logs
+    volumes:
+      - chat_data:/app/Data/Chat
+      - www_data:/app/Data/Www
+      - api_data:/app/Data/Api
+      - log_data:/app/Data/Logs
+    networks:
+      - front-network
+    
+    #  Caddy反向代理
+  caddy:
+    image: caddy
+    #仅Caddy映射物理端口用于接受公网请求
+    environment:
+      - ACME_CA=https://acme.zerossl.com/v2/DV90
+      - CADDY_ACME_CA=https://acme.zerossl.com/v2/DV90
+      - CADDY_ACME_CA_ROOT=https://acme.zerossl.com/v2/DV90
+      - CADDY_ACME_EMAIL=1969154690@qq.com
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - front-network
+    volumes:
+      - ./Caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data  # 证书、ACME 状态持久化
+      - caddy_logs:/logs  # 日志持久化
+
+#容器网络定义
+#均连接到前端内部的容器网络
+networks:
+  front-network:
+
+volumes:
+  #数据卷
+  chat_data:
+  www_data:
+  api_data:
+  #日志卷
+  log_data:
+  www_log_data:
+  chat_log_data:
+  api_log_data:
+  #密钥卷
+  www_key_data:
+  chat_key_data:
+  api_key_data:
+ #Caddy卷
+  caddy_data:
+  caddy_logs:

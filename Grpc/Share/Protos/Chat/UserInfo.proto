@@ -1,0 +1,51 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Chat";
+
+package chat;
+import "Share/Protos/Shared/Status.proto";
+import "google/protobuf/empty.proto";
+service UserInfoService{
+
+  rpc CheckAuthToken(AuthToken)returns(shared.Status);
+  rpc GetTempUser(google.protobuf.Empty)returns(AuthToken);
+  //从包含mail_box/guid的UserInfo获取完整的UserInfo
+  rpc  GetUser(AuthToken) returns (UserInfo);
+  rpc  PasswordLogin(UserInfo) returns (AuthToken);
+  rpc  CreateUser(UserInfo) returns (AuthToken);
+
+
+
+  //注册时先PostVerifyCode再CreateUser，验证码登陆PostVerifyCode
+  rpc  GetVerifyCode(VerifyCode) returns (shared.Status);
+  rpc  PostVerifyCodeRegister(VerifyCode) returns (shared.Status);
+  rpc  PostVerifyCodeVerifyCodeLogin(VerifyCode) returns (AuthToken);
+  rpc DeleteAccount(AuthToken)returns(shared.Status);
+  rpc LogoutAccount(AuthToken)returns(shared.Status);
+}
+
+message VerifyCode{
+  string mail_box = 1;
+  string verify_code = 2;
+  VerifyCodeTypeEnum VerifyCodeType = 3;
+  int64 create_timestamp = 4;
+}
+
+enum VerifyCodeTypeEnum{
+  REGISTER = 0;
+  LOGIN = 1;
+}
+
+message UserInfo{
+  string mail_box = 1;//邮箱
+  string user_guid = 2;//用户Guid
+  string nick_name = 3;//用户昵称
+  string hashed_password = 4;//哈希后密码(数据库表项)
+  string password = 5;//明文密码(用于前端到后端传递)
+}
+
+message AuthToken{
+  string user_guid = 2;//用户Guid
+  string cookie_string = 1;//Cookie string
+  int64 create_timestamp = 4;
+  bool is_valid = 3;
+}

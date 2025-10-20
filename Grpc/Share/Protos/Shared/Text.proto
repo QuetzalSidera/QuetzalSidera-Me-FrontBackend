@@ -1,0 +1,79 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Shared.Text";
+
+package shared;
+
+message Text{
+  //由于大部分情况下以中文为唯一标识符不合理，因此在这里用id作为标识符，用于后端数据存储
+  string id = 1;
+  //中文
+  string text_default = 2;
+  //英文
+  string text_en_us = 3;
+  //各国语言
+  repeated DictionaryEntry text_dict = 4;
+}
+message DictionaryEntry{
+    LangType lang_type=1;
+    string text=2;
+}
+
+enum LangType {
+  ZH_CN = 0;   // 简体中文(中国)
+  ZH_TW = 1;   // 繁体中文(台湾地区)
+  ZH_HK = 2;   // 繁体中文(香港)
+  EN_HK = 3;   // 英语(香港)
+  EN_US = 4;   // 英语(美国)
+  EN_GB = 5;   // 英语(英国)
+  EN_WW = 6;   // 英语(全球)
+  EN_CA = 7;   // 英语(加拿大)
+  EN_AU = 8;   // 英语(澳大利亚)
+  EN_IE = 9;   // 英语(爱尔兰)
+  EN_FI = 10;  // 英语(芬兰)
+  FI_FI = 11;  // 芬兰语(芬兰)
+  EN_DK = 12;  // 英语(丹麦)
+  DA_DK = 13;  // 丹麦语(丹麦)
+  EN_IL = 14;  // 英语(以色列)
+  HE_IL = 15;  // 希伯来语(以色列)
+  EN_ZA = 16;  // 英语(南非)
+  EN_IN = 17;  // 英语(印度)
+  EN_NO = 18;  // 英语(挪威)
+  EN_SG = 19;  // 英语(新加坡)
+  EN_NZ = 20;  // 英语(新西兰)
+  EN_ID = 21;  // 英语(印度尼西亚)
+  EN_PH = 22;  // 英语(菲律宾)
+  EN_TH = 23;  // 英语(泰国)
+  EN_MY = 24;  // 英语(马来西亚)
+  EN_XA = 25;  // 英语(阿拉伯)
+  KO_KR = 26;  // 韩文(韩国)
+  JA_JP = 27;  // 日语(日本)
+  NL_NL = 28;  // 荷兰语(荷兰)
+  NL_BE = 29;  // 荷兰语(比利时)
+  PT_PT = 30;  // 葡萄牙语(葡萄牙)
+  PT_BR = 31;  // 葡萄牙语(巴西)
+  FR_FR = 32;  // 法语(法国)
+  FR_LU = 33;  // 法语(卢森堡)
+  FR_CH = 34;  // 法语(瑞士)
+  FR_BE = 35;  // 法语(比利时)
+  FR_CA = 36;  // 法语(加拿大)
+  ES_LA = 37;  // 西班牙语(拉丁美洲)
+  ES_ES = 38;  // 西班牙语(西班牙)
+  ES_AR = 39;  // 西班牙语(阿根廷)
+  ES_US = 40;  // 西班牙语(美国)
+  ES_MX = 41;  // 西班牙语(墨西哥)
+  ES_CO = 42;  // 西班牙语(哥伦比亚)
+  ES_PR = 43;  // 西班牙语(波多黎各)
+  DE_DE = 44;  // 德语(德国)
+  DE_AT = 45;  // 德语(奥地利)
+  DE_CH = 46;  // 德语(瑞士)
+  RU_RU = 47;  // 俄语(俄罗斯)
+  IT_IT = 48;  // 意大利语(意大利)
+  EL_GR = 49;  // 希腊语(希腊)
+  NO_NO = 50;  // 挪威语(挪威)
+  HU_HU = 51;  // 匈牙利语(匈牙利)
+  TR_TR = 52;  // 土耳其语(土耳其)
+  CS_CZ = 53;  // 捷克语(捷克共和国)
+  SL_SL = 54;  // 斯洛文尼亚语
+  PL_PL = 55;  // 波兰语(波兰)
+  SV_SE = 56;  // 瑞典语(瑞典)
+}

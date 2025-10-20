@@ -1,0 +1,815 @@
+﻿@page "/"
+@using System.Collections.Concurrent
+@using Chat.QuetzalSidera.Me.AppState
+@using Chat.QuetzalSidera.Me.Components.Shared
+@using Chat.QuetzalSidera.Me.Service
+@using Grpc.Share.Protos.ChatModels
+@using Grpc.Share.Tools
+@using Protobuf.Chat
+@using Chat.QuetzalSidera.Me.Components.Components
+@using Grpc.Share.Config.Chat
+@inject ChatService ChatService
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStorage
+@inject AppState AppStateInstance
+@using static Grpc.Share.Config.Chat.ConfigData.LangUtils
+<!--suppress HtmlDeprecatedAttribute -->
+<div class="chat-container">
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <!-- Logo区域 -->
+        <div class="logo-section">
+            <div class="logo">
+                <!-- 机器人头像 -->
+                <img src="img/爱丽丝.jpeg"
+                     alt="AI助手"
+                     class="logo-avatar"/>
+                <!-- 机器人姓名和介绍 -->
+                <div class="logo-info">
+                    <div class="ai-name">
+                        <ChatText
+                            TextValue="@TendouAlice.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="scale"></ChatText>
+                    </div>
+                    <div class="ai-description">
+                        <ChatText
+                            TextValue="@BangBangKaBang.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade"></ChatText>
+                    </div>
+                </div>
+            </div>
+            <p class="logo-tagline">
+                <ChatText
+                    TextValue="@TeacherWelcome.ToLangString(AppStateInstance.CurrentLang)"
+                    AnimationType="slide"></ChatText>
+            </p>
+        </div>
+
+        <!-- 新建对话按钮 -->
+        <div class="new-chat-section">
+            <button class="btn-new-chat" @onclick="CreateNewSession" disabled="@ChatService.IsFirstRendered">
+                <i class="fas fa-plus"></i>
+                <ChatText
+                    TextValue="@((ChatService.IsFirstRendered) ? (Loading2.ToLangString(AppStateInstance.CurrentLang)) : (NewConversation.ToLangString(AppStateInstance.CurrentLang)))"
+                    AnimationType="scale"
+                ></ChatText>
+                @if (ChatService.IsFirstRendered)
+                {
+                    <i class="fas fa-spinner fa-spin"></i>
+                }
+            </button>
+        </div>
+
+        <!-- 历史对话列表 -->
+        <div class="history-section">
+            <h4>
+                <ChatText
+                    TextValue="@ConversationHistory.ToLangString(AppStateInstance.CurrentLang)"
+                    AnimationType="scale"></ChatText>
+            </h4>
+            <div class="language-switch">
+                <ChatText
+                    TextValue="@(CurrentLanguage.ToLangString(AppStateInstance.CurrentLang) + ": " + AppStateInstance.CurrentLang.ToReadableString())"
+                    AnimationType="slide" UserOnClick="Onclick"></ChatText>
+            </div>
+            <div class="history-list">
+                @if (_localHistory.Any())
+                {
+                    @foreach (var session in _localHistory)
+                    {
+                        <div
+                            class="history-item @(_currentSession?.SessionGuid == session.SessionGuid ? "active" : "")"
+                            @onclick="() => SelectSession(session)">
+                            <div class="history-title">
+                                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                    TextValue="@(session.Content.Count == 0 ? NewConversationTitle.ToLangString(AppStateInstance.CurrentLang) : session.Title)"
+                                    AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="history-item">
+                        <span class="history-title"><ChatText
+                                TextValue="@NoConversationRecords.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></ChatText></span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 用户信息 -->
+        <div class="user-section">
+            @if (_hasLogin && _currentUser != null)
+            {
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <!-- 修改侧边栏用户头像 -->
+                        <img src="img/Sensei.PNG"
+                             alt="@(_currentUser?.NickName ?? UserAvatar.ToLangString(AppStateInstance.CurrentLang))"
+                             class="user-avatar"
+                             onerror="this.style.display='none'; document.getElementById('fallback').style.display='inline-block'"/>
+                        <i id="fallback" class="fa fa-user" style="display:none;"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@(_currentUser?.NickName)"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+
+                        </div>
+                        <div class="user-email">
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@_currentUser?.MailBox"
+                                AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                        </div>
+                    </div>
+                    <div class="sign-out">
+                        <button class="sign-out-btn" @onclick="OnClickLogout">
+                            <span class="scroll-text">
+                            <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                                TextValue="@LogoutAccount.ToLangString(AppStateInstance.CurrentLang)">
+                            </Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (!_hasLogin)
+            {
+                <div class="login-section">
+                    <div class="login-prompt">
+                        <div class="login-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="login-text">
+                            <div class="login-title">
+                                <ChatText
+                                    TextValue="@LetsChat.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="scale"></ChatText>
+                            </div>
+                            <div class="login-subtitle">
+                                <ChatText
+                                    TextValue="@SyncAfterLogin.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="scale"></ChatText>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-login" @onclick="ShowLoginDialog" disabled="@ChatService.IsFirstRendered">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <ChatText
+                            TextValue="@(ChatService.IsFirstRendered ? Loading2.ToLangString(AppStateInstance.CurrentLang) : ConfigData.LangUtils.LoginRegister.ToLangString(AppStateInstance.CurrentLang))"
+                            AnimationType="scale"></ChatText>
+                        @if (ChatService.IsFirstRendered)
+                        {
+                            <i class="fas fa-spinner fa-spin"></i>
+                        }
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">
+                            <ChatText
+                                TextValue="@Loading.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="scale"></ChatText>
+                        </div>
+                        <div class="user-email"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    @switch (AppStateInstance.ShowLoginDialog)
+    {
+        case AppState.DialogEnum.Login:
+            <!-- 登录注册控件 -->
+            <LoginRegister VisibleChanged="OnLoginDialogClose"/>
+            break;
+        case AppState.DialogEnum.Logout:
+            <Logout VisibleChanged="OnLogoutDialogClose"/>
+            break;
+        case AppState.DialogEnum.DeleteConfirm:
+            <LoginRegister VisibleChanged="OnDeleteAccountAuthed" IsDelete="true"/>
+            break;
+    }
+    <!-- 主聊天区域 -->
+    <div class="main-chat-area">
+        @if (_currentSession != null)
+        {
+            <div class="chat-header">
+                <h3>
+                    <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                        TextValue="@(_currentSession.Content.Count == 0 ? NewConversationTitle.ToLangString(AppStateInstance.CurrentLang) : _currentSession.Title)"
+                        AnimationType="fade"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+                </h3>
+                <span
+                    class="session-info">
+                    <ChatText
+                        TextValue="@(CreatedAt.ToLangString(AppStateInstance.CurrentLang) + ": " +
+                                   (DateTimeOffset.FromUnixTimeSeconds(_currentSession.CreateTimestamp).DateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm")))"
+                        AnimationType="fade"></ChatText>
+                </span>
+            </div>
+
+            <div class="chat-messages">
+                @foreach (var message in _currentMessages)
+                {
+                    if (!message.IsThinkMessage)
+                    {
+                        var isUser = message.Talker == Talker.User;
+                        <div class="message @(isUser ? "user-message" : "ai-message")">
+                            @if (isUser)
+                            {
+                                <!-- 修改侧边栏用户头像 -->
+                                <img src="img/Sensei.PNG"
+                                     alt="@(_currentUser?.NickName ?? UserAvatar.ToLangString(AppStateInstance.CurrentLang))"
+                                     class="user-avatar"
+                                     onerror="this.style.display='none'"/>
+                            }
+                            else
+                            {
+                                <!-- 修改这里：AI头像改为img -->
+                                <img src="img/爱丽丝.jpeg"
+                                     alt=@AiAssistant.ToLangString(AppStateInstance.CurrentLang)
+                                     class="message-avatar ai-avatar"
+                                     onerror="this.style.display='none'"/>
+                            }
+                            <div class="message-content">
+                                <div class="message-text">@message.Message</div>
+                                <div class="message-time">
+                                    @DateTimeOffset.FromUnixTimeSeconds(message.Timestamp).DateTime.ToLocalTime().ToString("HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        if (IsLoading(_currentSession))
+                        {
+                            <div class="message ai-message">
+                                <img src="img/爱丽丝.jpeg"
+                                     alt=@AiAssistant.ToLangString(AppStateInstance.CurrentLang)
+                                     class="message-avatar ai-avatar"/>
+                                <div class="message-content">
+                                    <div class="typing-indicator">
+                                        <div class="typing-text">
+                                            @Thinking.ToLangString(AppStateInstance.CurrentLang)
+                                        </div>
+                                        <div class="typing-dots">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+
+
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="input-section">
+                <div class="input-container">
+                    <textarea @bind="_currentMessage"
+                              @bind:event="oninput"
+                              @onkeydown="HandleKeyDown"
+                              placeholder="@(InputYourQuestion.ToLangString(AppStateInstance.CurrentLang) + "...")"
+                              class="message-input"
+                              rows="1"></textarea>
+                    <button @onclick="SendMessage"
+                            disabled="@(string.IsNullOrWhiteSpace(_currentMessage) || IsLoading(_currentSession) || IsTalking(_currentSession))"
+                            class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <!-- 备案信息和AI声明 -->
+                <div class="footer-info">
+                    <div class="copyright-info">
+                        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank"
+                           rel="noopener noreferrer">
+                            <ChatText
+                                TextValue="@CopyrightInfo.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </a>
+                        <a href="https://bluearchive-cn.com" target="_blank" rel="noopener noreferrer">
+                            <ChatText
+                                TextValue="@CopyrightAddition.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </a>
+                        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank"
+                           rel="noopener noreferrer">
+                            <ChatText
+                                TextValue="@IcpRecordInfo.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </a>
+
+                    </div>
+                    <div class="ai-privacy-info">
+                        <div class="ai-disclaimer">
+                            <i class="fas fa-robot"></i>
+                            <ChatText
+                                TextValue="@AiGeneratedContentNotice.ToLangString(AppStateInstance.CurrentLang)"
+                                AnimationType="fade"></ChatText>
+                        </div>
+                        <div class="privacy-declare">
+                            <a href="/static/declare.html" target="_blank" rel="noopener noreferrer">
+                                <ChatText
+                                    TextValue="@PrivacyDeclare.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </a>
+                        </div>
+                        <div class="psb-declare">
+                            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=44030002008220" target="_blank"
+                               rel="noopener noreferrer">
+                                <ChatText
+                                    TextValue="@PsbRecordInfo.ToLangString(AppStateInstance.CurrentLang)"
+                                    AnimationType="fade"></ChatText>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        }
+        else
+        {
+            <div class="welcome-section">
+                <!-- 欢迎页面的AI头像 -->
+                <div class="welcome-avatar">
+                    <img src="img/爱丽丝.jpeg"
+                         alt="爱丽丝"
+                         class="welcome-avatar-img"/>
+                    <div class="message-avatar avatar-ai welcome-avatar-fallback" style="display: none;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+                <h2>
+                    <ChatText
+                        TextValue="@WelcomeTitle.ToLangString(AppStateInstance.CurrentLang)"
+                        AnimationType="scale"></ChatText>
+                </h2>
+                <p>
+                    <ChatText
+                        TextValue="@WelcomeIdentity.ToLangString(AppStateInstance.CurrentLang)"
+                        AnimationType="fade"></ChatText>
+                </p>
+                <p>
+                    <ChatText
+                        TextValue="@WelcomeGreeting.ToLangString(AppStateInstance.CurrentLang)"
+                        AnimationType="fade"></ChatText>
+                </p>
+                <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
+                    <span class="status ongoing"> <ChatText
+                            TextValue="@StatusDeepSeek.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade"></ChatText></span>
+                    <span class="status completed"> <ChatText
+                            TextValue="@StatusStreaming.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade"></ChatText></span>
+                    <span class="status ongoing"> <ChatText
+                            TextValue="@StatusMemory.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade"></ChatText></span>
+                    <span class="status completed"> <ChatText
+                            TextValue="@StatusMillennium.ToLangString(AppStateInstance.CurrentLang)"
+                            AnimationType="fade"></ChatText></span>
+                </div>
+
+                @if (!_localHistory.Any())
+                {
+                    <button class="btn-new-chat" @onclick="CreateNewSession" style="margin-top: 30px;"
+                            disabled="@ChatService.IsFirstRendered">
+                        <i class="fas fa-plus"></i>
+                        <ChatText
+                            TextValue="@(ChatService.IsFirstRendered ? Loading2.ToLangString(AppStateInstance.CurrentLang) : StartFirstChat.ToLangString(AppStateInstance.CurrentLang))"
+                            AnimationType="slide"></ChatText>
+                        @if (ChatService.IsFirstRendered)
+                        {
+                            <i class="fas fa-spinner fa-spin"></i>
+                        }
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* ReSharper disable RedundantDefaultMemberInitializer *@
+
+@code {
+
+    /// <summary>
+    /// 所有对话历史
+    /// </summary>
+    private List<ChatSessionModel> _localHistory = [];
+
+    private readonly ConcurrentDictionary<string, bool> _loadingSession = new();
+
+    private readonly ConcurrentDictionary<string, bool> _talkingSession = new();
+
+    private void NowLoading(ChatSessionModel session)
+    {
+        _loadingSession.AddOrUpdate(session.SessionGuid, (_) => true, (_, _) => true);
+    }
+
+    private void NowTalking(ChatSessionModel session)
+    {
+        _talkingSession.AddOrUpdate(session.SessionGuid, (_) => true, (_, _) => true);
+    }
+
+    private void FinishLoading(ChatSessionModel session)
+    {
+        _loadingSession.AddOrUpdate(session.SessionGuid, (_) => false, (_, _) => false);
+    }
+
+    private void FinishTalking(ChatSessionModel session)
+    {
+        _talkingSession.AddOrUpdate(session.SessionGuid, (_) => false, (_, _) => false);
+    }
+
+    private bool IsLoading(ChatSessionModel session)
+    {
+        return _loadingSession.TryGetValue(session.SessionGuid, out var result) && result;
+    }
+
+    private bool IsTalking(ChatSessionModel session)
+    {
+        return _talkingSession.TryGetValue(session.SessionGuid, out var result) && result;
+    }
+
+    /// <summary>
+    /// 选中的会话
+    /// </summary>
+    private ChatSessionModel? _currentSession;
+
+    /// <summary>
+    /// 当前会话信息列表
+    /// </summary>
+    private List<ChatMessageModel> _currentMessages = [];
+
+    /// <summary>
+    /// 当前用户信息
+    /// </summary>
+    private UserInfoModel? _currentUser;
+
+    /// <summary>
+    /// 用户正在输入的信息
+    /// </summary>
+    private string _currentMessage = string.Empty;
+
+    /// <summary>
+    /// 用户是否登录
+    /// </summary>
+    private bool _hasLogin = false;
+
+    private bool _hasRendered = false;
+
+    private void ReInit()
+    {
+        _localHistory.Clear();
+        _loadingSession.Clear();
+        _talkingSession.Clear();
+        _currentSession = null;
+        _currentMessages.Clear();
+        _currentUser = null;
+        _currentMessage = string.Empty;
+        _hasLogin = false;
+        _hasRendered = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        AppStateInstance.OnLanguageChanged += StateChanged;
+        _localHistory = ChatService.LocalHistory.History;
+    }
+
+    private async Task StateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Console.WriteLine($"AppStateInstance:{ChatService.IsFirstRendered}");
+        _hasRendered = true;
+        if (ChatService.IsFirstRendered)
+        {
+            ChatService.IsFirstRendered = false;
+            try
+            {
+                var userGuid = await ProtectedLocalStorage.GetAsync<string>(AppState.UserGuidKey);
+                var authToken = await ProtectedLocalStorage.GetAsync<string>(AppState.AuthTokenKey);
+                var createTimestamp = await ProtectedLocalStorage.GetAsync<long>(AppState.CreateTimestampKey);
+                var lang = await ProtectedLocalStorage.GetAsync<string>(AppState.UserLangKey);
+
+                string userGuidValue = (userGuid.Success ? userGuid.Value : string.Empty) ?? string.Empty;
+                string authTokenValue = (authToken.Success ? authToken.Value : string.Empty) ?? string.Empty;
+                long createTimestampValue = (createTimestamp.Success ? createTimestamp.Value : 0);
+                string langValue = lang.Value ?? string.Empty;
+                AppStateInstance.CurrentLang = langValue.ToLangType();
+                StateHasChanged();
+                Console.WriteLine("Start");
+                Console.WriteLine(userGuidValue);
+                Console.WriteLine(authTokenValue);
+                Console.WriteLine(createTimestampValue);
+                Console.WriteLine(userGuidValue);
+                Console.WriteLine("End");
+                //读取用户数据有效，保存用户AuthToken
+                if (!string.IsNullOrEmpty(userGuidValue) && !string.IsNullOrEmpty(authTokenValue) && createTimestampValue != 0)
+                {
+                    ChatService.IsAuthed = false;
+                    ChatService.AuthToken.IsRegistered = false;
+                    ChatService.AuthToken.CookieString = authTokenValue;
+                    ChatService.AuthToken.UserGuid = userGuidValue;
+                    ChatService.AuthToken.CreateTimestamp = createTimestampValue;
+                    Console.WriteLine("Checking1");
+                    await ChatService.CheckAuthTokenAsync();
+                }
+            }
+            catch
+            {
+                ChatService.AuthToken.IsRegistered = false;
+                ChatService.IsAuthed = false;
+                Console.WriteLine("Checking2");
+            }
+
+            if (!ChatService.IsAuthed)
+            {
+                await ChatService.GetTempUserAsync();
+                try
+                {
+                    await ProtectedLocalStorage.SetAsync(AppState.AuthTokenKey, ChatService.AuthToken.CookieString);
+                    await ProtectedLocalStorage.SetAsync(AppState.UserGuidKey, ChatService.AuthToken.UserGuid);
+                    await ProtectedLocalStorage.SetAsync(AppState.CreateTimestampKey, ChatService.AuthToken.CreateTimestamp);
+                }
+                catch
+                {
+                    //忽略LocalStorage错误
+                }
+            }
+            else
+            {
+                await LoadUserInfoAndChatSessions();
+            }
+
+            if (_localHistory.Any())
+            {
+                await SelectSession(_localHistory.First());
+            }
+
+            if (_currentSession != null)
+            {
+                await ScrollToBottom();
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    public async Task OnLoginDialogClose(bool isAuthed)
+    {
+        if (isAuthed)
+        {
+            await LoadUserInfoAndChatSessions();
+
+            if (_localHistory.Any())
+            {
+                await SelectSession(_localHistory.First());
+            }
+
+            if (_currentSession != null)
+            {
+                await ScrollToBottom();
+            }
+        }
+    }
+
+    public void OnLogoutDialogClose(bool isLogout)
+    {
+        StateHasChanged();
+        if (!isLogout)
+            return;
+        ReInit();
+        ChatService.ReInit();
+        StateHasChanged();
+    }
+
+    public async Task OnDeleteAccountAuthed(bool isAuthed)
+    {
+        if (isAuthed)
+        {
+            await ChatService.DeleteAccountAsync(ChatService.AuthToken);
+            ReInit();
+            ChatService.ReInit();
+        }
+
+        StateHasChanged();
+    }
+
+    private void ShowLoginDialog()
+    {
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.Login;
+    }
+
+
+    private async Task LoadUserInfoAndChatSessions()
+    {
+        var userInfoResult = await ChatService.GetUserInfoAsync();
+        var chatSessionsResult = await ChatService.SyncChatHistoryAsync();
+        _hasLogin = ChatService.AuthToken.IsRegistered;
+        _currentUser = userInfoResult;
+        _localHistory = chatSessionsResult;
+        StateHasChanged();
+    }
+
+
+    private async Task CreateNewSession()
+    {
+        var emptySession = _localHistory.FirstOrDefault(s => s.Content.Count == 0);
+        if (emptySession != null)
+        {
+            await SelectSession(emptySession);
+            return;
+        }
+
+        try
+        {
+            var newSession = await ChatService.CreateChatSessionAsync();
+            _localHistory.Insert(0, newSession);
+
+            Console.WriteLine(_localHistory.Count);
+            await SelectSession(newSession);
+        }
+        catch (Exception)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "创建新对话失败");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SelectSession(ChatSessionModel session)
+    {
+        _currentSession = session;
+        _currentMessages = _localHistory.FirstOrDefault(s => s.SessionGuid == session.SessionGuid)?.Content ?? new List<ChatMessageModel>();
+        _currentMessage = string.Empty;
+        StateHasChanged();
+        await ScrollToBottom();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_currentMessage) || _currentSession == null || IsLoading(_currentSession) || IsTalking(_currentSession))
+            return;
+        var messageToSend = _currentMessage.Trim();
+        _currentMessage = string.Empty;
+        var currentMessages = _currentMessages;
+        var currentSession = _currentSession;
+        var userMessage = new ChatMessageModel
+        {
+            Message = messageToSend,
+            Talker = Talker.User,
+            Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
+        };
+        if (currentMessages.Count == 0)
+        {
+            currentSession.Title = SummaryHelper.GenerateSummary(userMessage.Message);
+        }
+
+
+        currentMessages.Add(userMessage);
+        NowLoading(currentSession);
+        // _loadingSession.AddOrUpdate(currentSession.SessionGuid, (string key) => true, (string key, bool oldValue) => true);
+        currentMessages.Add(new ChatMessageModel()
+        {
+            Talker = Talker.Agent,
+            Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            Message = "爱丽丝正在思考...",
+            IsThinkMessage = true
+        });
+
+        StateHasChanged();
+        await ScrollToBottom();
+        try
+        {
+            var responses = ChatService.SendMessageAsync(_currentSession.SessionGuid, messageToSend);
+
+            ChatMessageModel messageModel = new ChatMessageModel()
+            {
+                Message = string.Empty,
+                Talker = Talker.Agent,
+                Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            };
+            //流式输出
+            await foreach (var response in responses)
+            {
+                if (IsLoading(currentSession))
+                {
+                    FinishLoading(currentSession);
+                    NowTalking(currentSession);
+                    currentMessages.RemoveAll(m => (m.IsThinkMessage));
+                    StateHasChanged();
+                    currentMessages.Add(messageModel);
+                    StateHasChanged();
+                    await ScrollToBottom();
+                }
+
+                messageModel.Message += response.Message;
+                StateHasChanged();
+            }
+
+            FinishTalking(currentSession);
+            StateHasChanged();
+        }
+
+        catch (Exception ex)
+        {
+            var errorMessage = new ChatMessageModel
+            {
+                Message = $"服务器繁忙，请稍后再试 Trace: Function: SendMessage, Exception: {ex.GetType().Name}, Message: {ex.Message} ",
+                Talker = Talker.Agent,
+                Timestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
+            };
+            FinishLoading(currentSession);
+
+            StateHasChanged();
+            currentMessages.Add(errorMessage);
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+        finally
+        {
+            FinishLoading(currentSession);
+            FinishTalking(currentSession);
+        }
+    }
+
+    /// <summary>
+    /// 状态变量，用户上次输入是否是非英文输入法，若是，则回车键不发送
+    /// (在MacOS上，此IsComposing在中文输入法下为true，但在中文输入法中按下回车时为false)
+    /// 
+    /// </summary>
+    private bool _lastIsIsComposing = false;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e is { Key: "Enter", ShiftKey: false } && !_lastIsIsComposing)
+        {
+            await JsRuntime.InvokeVoidAsync("eval", "event.preventDefault()");
+            if (string.IsNullOrWhiteSpace(_currentMessage) || _currentSession == null || IsLoading(_currentSession) || IsTalking(_currentSession))
+                return;
+            await SendMessage();
+            StateHasChanged();
+        }
+
+        _lastIsIsComposing = e.IsComposing;
+    }
+
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("chatHelper.scrollToBottom");
+        }
+        catch
+        {
+            // 忽略JS错误
+        }
+    }
+
+    public void Onclick()
+    {
+        try
+        {
+            AppStateInstance.ChangeLang();
+            if (_hasRendered)
+            {
+                ProtectedLocalStorage.SetAsync(AppState.UserLangKey, AppStateInstance.CurrentLang.ToHtmlLang());
+            }
+        }
+        catch
+        {
+            //忽略LocalStorage错误
+        }
+    }
+
+    private void OnClickLogout()
+    {
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.Logout;
+        StateHasChanged();
+    }
+
+}
+
+@* ReSharper restore RedundantDefaultMemberInitializer *@

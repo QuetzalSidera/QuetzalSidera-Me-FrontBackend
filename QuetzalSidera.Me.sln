@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuetzalSidera.Me", "QuetzalSidera.Me\QuetzalSidera.Me.csproj", "{2F3B4E72-CA9D-4318-9AA4-6FA22F9CB8B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chat.QuetzalSidera.Me", "Chat.QuetzalSidera.Me\Chat.QuetzalSidera.Me.csproj", "{E0FC1C57-6002-49C7-AF8B-98B220FBD168}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CEE3FF0B-DF77-4D08-8313-9BFC6232C2D5}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.QuetzalSidera.Me", "Api.QuetzalSidera.Me\Api.QuetzalSidera.Me.csproj", "{06C75F36-E5B7-48FF-B4DE-28EEF98C68E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grpc", "Grpc\Grpc.csproj", "{DE9EE2AB-9714-4F26-8D3F-62DB0458FB27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend", "Backend\Backend.csproj", "{34138CBE-384D-4A7F-AEAF-1877B6728AE5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2F3B4E72-CA9D-4318-9AA4-6FA22F9CB8B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F3B4E72-CA9D-4318-9AA4-6FA22F9CB8B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F3B4E72-CA9D-4318-9AA4-6FA22F9CB8B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F3B4E72-CA9D-4318-9AA4-6FA22F9CB8B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0FC1C57-6002-49C7-AF8B-98B220FBD168}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0FC1C57-6002-49C7-AF8B-98B220FBD168}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0FC1C57-6002-49C7-AF8B-98B220FBD168}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0FC1C57-6002-49C7-AF8B-98B220FBD168}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06C75F36-E5B7-48FF-B4DE-28EEF98C68E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06C75F36-E5B7-48FF-B4DE-28EEF98C68E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06C75F36-E5B7-48FF-B4DE-28EEF98C68E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06C75F36-E5B7-48FF-B4DE-28EEF98C68E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE9EE2AB-9714-4F26-8D3F-62DB0458FB27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE9EE2AB-9714-4F26-8D3F-62DB0458FB27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE9EE2AB-9714-4F26-8D3F-62DB0458FB27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE9EE2AB-9714-4F26-8D3F-62DB0458FB27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34138CBE-384D-4A7F-AEAF-1877B6728AE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34138CBE-384D-4A7F-AEAF-1877B6728AE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34138CBE-384D-4A7F-AEAF-1877B6728AE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34138CBE-384D-4A7F-AEAF-1877B6728AE5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

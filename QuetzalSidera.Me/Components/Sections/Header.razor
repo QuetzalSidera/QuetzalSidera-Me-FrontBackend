@@ -1,0 +1,95 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Header
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@inject HeaderTitleDataService HeaderTitleDataService
+@inject HeaderWeatherDataService HeaderWeatherDataService
+@inject HeaderNavDataService HeaderNavDataService
+@inject HeaderProfileDataService HeaderProfileDataService
+@inject AppState AppState
+@rendermode InteractiveServer
+<header>
+    <div class="container">
+        <!-- 顶部logo -->
+        <div class="logo">
+            <i class="@_titleModel?.TitlePictureCss"></i>
+            <span><Text TextValue="@_titleModel?.Title.ToLangString(AppState.LangTypeInstance)"></Text></span>
+        </div>
+
+        <!-- 导航栏 - 左侧天气信息，右侧导航链接 -->
+        <div class="header-nav">
+            <!-- 左侧天气信息 - 与导航栏样式一致 -->
+            <div class="weather-info">
+                <div class="weather-item">
+                    <i class="fas fa-location"></i>
+                    <span><Text TextValue="@(ConfigData.LangUtils.MyLocation.ToTextModel().ToLangString(AppState.LangTypeInstance)+": "+_weatherModel?.Location.Location)" AnimationType="scale"></Text></span>
+                </div>
+                <div class="weather-item">
+                    <i class="@_weatherModel?.WeatherPictureCss"></i>
+                    <span><Text TextValue="@_weatherModel?.WeatherInfo" AnimationType="scale"></Text></span>
+                </div>
+                <div class="weather-item">
+                    <i class="fas fa-thermometer-half"></i>
+                    <span><Text TextValue="@_weatherModel?.Temp" AnimationType="scale"></Text></span>
+                </div>
+                <div class="weather-item">
+                    <i class="fas fa-tint"></i>
+                    <span><Text TextValue="@_weatherModel?.Humidity" AnimationType="scale"></Text></span>
+                </div>
+            </div>
+
+            <!-- 右侧导航链接 -->
+            <div class="external-nav">
+                @foreach (var item in _navModel?.NavItems ?? [])
+                {
+                    <a href="@item.Link"><i class="@item.PictureCss"></i>
+                        <Text TextValue="@item.Name.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="header-content">
+            <!-- 左侧大头像 -->
+            <div class="avatar-large">
+                <img src="@_profileModel?.HeaderPictureUrl" alt="个人头像">
+            </div>
+
+            <!-- 右侧个人信息 -->
+            <div class="header-info">
+                <h1>
+                    <Text TextValue="@_profileModel?.Name.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                </h1>
+                <p class="tagline">
+                    <Text TextValue="@_profileModel?.Summary?.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                </p>
+                <p>
+                    <Text TextValue="@_profileModel?.Description?.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                </p>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code{
+    TitleModel? _titleModel;
+    WeatherModel? _weatherModel;
+    NavModel? _navModel;
+    ProfileModel? _profileModel;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _titleModel = await HeaderTitleDataService.GetTitleAsync();
+        _weatherModel = await HeaderWeatherDataService.GetWeatherAsync();
+        _navModel = await HeaderNavDataService.GetNavListAsync();
+        _profileModel = await HeaderProfileDataService.GetProfileAsync();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+    
+    
+}

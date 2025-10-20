@@ -1,0 +1,13 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Api";
+
+package api;
+import "Share/Protos/Chat/UserInfo.proto";
+import "Share/Protos/Shared/Status.proto";
+import "google/protobuf/empty.proto";
+service MetaDataService{
+  rpc GetUserNum(google.protobuf.Empty)returns(UserNum);
+}
+message UserNum{
+  int64 user_num = 1;
+}

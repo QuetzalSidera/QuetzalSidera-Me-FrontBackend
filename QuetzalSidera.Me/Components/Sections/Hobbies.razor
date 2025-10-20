@@ -1,0 +1,72 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using Protobuf.Www.Content
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@inject AppState AppState
+@rendermode InteractiveServer
+@inject ContentDataService ContentDataService
+<!-- 个人爱好 -->
+<section id="@_sectionData?.SectionAnchor">
+    <h2><i class="@_sectionData?.SectionPictureCss"></i>
+        <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+    </h2>
+    <p class="section-intro">
+        <Text TextValue="@_sectionData?.SectionComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+    </p>
+
+    @foreach (var subsection in _sectionData?.Subsections ?? [])
+    {
+        <!-- 游戏 -->
+        <div class="hobby-card">
+            <div class="hobby-icon"><i class="@subsection.SubsectionPictureCss"></i></div>
+            <h3>
+                <Text TextValue="@subsection.SubsectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+            </h3>
+            <p class="subsection-comment">
+                <Text TextValue="@subsection.SubsectionComment.ToLangString(AppState.LangTypeInstance)"
+                      AnimationType="slide"></Text>
+            </p>
+            <div class="item-list">
+                @foreach (var card in subsection.Cards)
+                {
+                    //这里取Card类的HobbiesCard类型成员
+                    @if (card.WrappedCardType==CardType.NavSectionHobbies)
+                    {
+                        <a href="@card.WrappedHobbiesCard.CardLink" class="item-card">
+                            <div class="item-bg"
+                                 style="background-image: url('@card.WrappedHobbiesCard.CardPictureUrl')"></div>
+                            <div class="item-content">
+                                <div class="item-name">
+                                    <Text TextValue="@card.WrappedHobbiesCard.CardTitle.ToLangString(AppState.LangTypeInstance)"
+                                          AnimationType="fade"></Text>
+                                </div>
+                                <div class="item-description">
+                                    <Text TextValue="@card.WrappedHobbiesCard.CardComment.ToLangString(AppState.LangTypeInstance)"
+                                          AnimationType="slide" PictureCss="@card.WrappedHobbiesCard.CardPictureCss"></Text>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+    }
+</section>
+
+@code{
+    SectionModel? _sectionData;
+    List<SubsectionModel>? _subsectionsData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.RootPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs ==ConfigData.Hobbies.SectionTitle[LangType.EnUs]);
+        _subsectionsData = _sectionData?.Subsections?.ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+}

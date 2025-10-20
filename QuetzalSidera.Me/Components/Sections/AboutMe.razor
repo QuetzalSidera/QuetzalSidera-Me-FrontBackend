@@ -1,0 +1,53 @@
+@using System.Text
+@using System.Text.Json
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using Protobuf.Www.Content
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@using Text = Protobuf.Shared.Text.Text
+@inject AppState AppState
+@rendermode InteractiveServer
+@inject ContentDataService ContentDataService
+<!-- 个人介绍 -->
+@if (_sectionData != null && _cardData != null)
+{
+    <section id="@_sectionData?.SectionAnchor">
+        <h2><i class="@_sectionData?.SectionPictureCss"></i>
+            <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)"
+                  AnimationType="scale"></Text>
+        </h2>
+        <p class="section-intro">
+            <Text TextValue="@_sectionData.SectionComment.ToLangString(AppState.LangTypeInstance)"
+                  AnimationType="slide"></Text>
+        </p>
+        <div class="description-card">
+            @foreach (var description in _cardData?.CardContent ?? [])
+            {
+                <p>
+                    <Text TextValue="@description.ToLangString(AppState.LangTypeInstance)" AnimationType="fade"></Text>
+                </p>
+            }
+
+        </div>
+    </section>
+}
+
+@code{
+    SectionModel? _sectionData;
+    AboutCardModel? _cardData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.RootPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs == ConfigData.AboutMe.SectionTitle[LangType.EnUs]);
+        _cardData = _sectionData?.Cards?.FirstOrDefault()?.WrappedAboutCard;
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+
+
+}

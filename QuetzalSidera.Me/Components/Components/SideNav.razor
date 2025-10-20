@@ -1,0 +1,70 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using QuetzalSidera.Me.Models
+@inject ContentDataService ContentDataService
+@rendermode InteractiveServer
+@inject AppState AppState
+@inject NavigationManager NavigationManager
+<!-- 左侧目录导航 -->
+@if (_sections != null)
+{
+    <div class="sidebar">
+        <div class="sidebar-nav">
+            <h3>
+                <Text
+                    TextValue="@ConfigData.LangUtils.SideNavTitle.ToTextModel().ToLangString(AppState.LangTypeInstance)"></Text>
+            </h3>
+            <ul class="sidebar-links">
+                @foreach (var sectionModel in _sections ?? [])
+                {
+                    var textValue = sectionModel.SectionTitle.ToLangString(AppState.LangTypeInstance);
+                    <li>
+                        @if (Path != ConfigData.PathConfig.RootPath)
+                        {
+                            <a href="@(NavigationManager.ToBaseRelativePath(NavigationManager.Uri) + "#" + sectionModel.SectionAnchor)"
+                               class="nav-link">
+                                <Text TextValue="@textValue"></Text>
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="@("#" + sectionModel.SectionAnchor)" class="nav-link">
+                                <Text TextValue="@textValue"></Text>
+                            </a>
+                        }
+                    </li>
+                }
+            </ul>
+            <div class="language-switch">
+                <Text
+                    TextValue="@(ConfigData.LangUtils.CurrentLanguage.ToTextModel().ToLangString(AppState.LangTypeInstance) + ": " + AppState.LangTypeInstance.ToReadableString())"
+                    AnimationType="slide" UserOnClick="OnClick"></Text>
+            </div>
+        </div>
+    </div>
+}
+
+@code{
+
+    [Parameter] public string Path { get; set; } = ConfigData.PathConfig.RootPath;
+    List<SectionModel>? _sections;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(Path);
+        _sections = layout.Sections.ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+
+    public void OnClick()
+    {
+        AppState.ChangeLang();
+        StateHasChanged();
+    }
+
+}
+

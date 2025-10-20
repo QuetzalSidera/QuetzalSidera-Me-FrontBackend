@@ -1,0 +1,54 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using Protobuf.Www.Content
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@rendermode InteractiveServer
+@inject AppState AppState
+@inject ContentDataService ContentDataService
+<!-- 技术栈 -->
+<section id="@_sectionData?.SectionAnchor">
+    <h2><i class="@_sectionData?.SectionPictureCss"></i>
+        <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+    </h2>
+    <p class="section-intro">
+        <Text TextValue="@_sectionData?.SectionComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+    </p>
+    <div class="tech-grid">
+        @foreach (var card in _cardData ?? [])
+        {
+            <a href="@card.CardLink" class="tech-item">
+                <div class="tech-icon"><i class="@card.CardPictureCss"></i></div>
+                <div>
+                    <h4>
+                        <Text TextValue="@card.CardTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+                    </h4>
+                    <span class="@card.ManageStatus.ToCss()"><Text
+                            TextValue="@card.ManageStatus.ToTextModel().ToLangString(AppState.LangTypeInstance)"
+                            AnimationType="fade"></Text></span>
+                </div>
+            </a>
+        }
+    </div>
+</section>
+
+@code{
+    SectionModel? _sectionData;
+    List<TechStackCardModel>? _cardData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.RootPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs == ConfigData.TechStack.SectionTitle[LangType.EnUs]);
+        _cardData = _sectionData?.Cards?.Select(wrappedCard => wrappedCard.WrappedTechStackCard ?? new TechStackCardModel()).ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+
+    [CascadingParameter(Name = "LangType")]
+    private LangType LangTypeInstance { get; set; }
+
+}

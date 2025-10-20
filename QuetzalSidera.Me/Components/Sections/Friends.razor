@@ -1,0 +1,52 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Config.Www
+@using Grpc.Share.Protos.WwwModels.Content
+@using Grpc.Share.Tools
+@using Protobuf.Shared.Text
+@using Protobuf.Www.Content
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@inject AppState AppState
+@inject ContentDataService ContentDataService
+@rendermode InteractiveServer
+<!-- 友链 -->
+<section id="@_sectionData?.SectionAnchor">
+    <h2><i class="@_sectionData?.SectionPictureCss"></i>
+        <Text TextValue="@_sectionData?.SectionTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+    </h2>
+    <p class="section-intro">
+        <Text TextValue="@_sectionData?.SectionComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+    </p>
+    <div class="friend-grid">
+        @foreach (var card in _cardData ?? [])
+        {
+            <a href="@card.CardLink" class="friend-card">
+                <img src="@card.CardPictureUrl" alt="@card.CardTitle.ToLangString(AppState.LangTypeInstance)"
+                     class="friend-avatar">
+                <div class="friend-info">
+                    <div class="friend-name">
+                        <Text TextValue="@card.CardTitle.ToLangString(AppState.LangTypeInstance)" AnimationType="scale"></Text>
+                    </div>
+                    <div class="friend-desc">
+                        <Text TextValue="@card.CardComment.ToLangString(AppState.LangTypeInstance)" AnimationType="slide"></Text>
+                    </div>
+                </div>
+            </a>
+        }
+    </div>
+</section>
+
+@code{
+    SectionModel? _sectionData;
+    List<FriendsCardModel>? _cardData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var layout = await ContentDataService.GetLayoutAsync(ConfigData.PathConfig.RootPath);
+        _sectionData = layout.Sections.FirstOrDefault(section => section.SectionTitle.TextEnUs == ConfigData.Friends.SectionTitle[LangType.EnUs]);
+        _cardData = _sectionData?.Cards?.Select(wrappedCard => wrappedCard.WrappedFriendsCard ?? new FriendsCardModel()).ToList();
+        AppState.OnLanguageChanged += StateHasChanged;
+        StateHasChanged();
+    }
+
+}

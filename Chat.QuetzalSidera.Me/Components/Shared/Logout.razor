@@ -1,0 +1,95 @@
+@using Chat.QuetzalSidera.Me.AppState
+@using Chat.QuetzalSidera.Me.Components.Components
+@using Chat.QuetzalSidera.Me.Service
+@using Grpc.Share.Config.Chat
+@using Grpc.Share.Tools
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStorage
+@rendermode InteractiveServer
+@inject ChatService ChatService
+@inject AppState AppStateInstance
+<div class="login-register-dialog"
+     style="display: @(AppStateInstance.ShowLoginDialog == AppState.DialogEnum.Logout ? "flex" : "none");">
+    <div class="login-dialog-content">
+        <div class="login-dialog-header">
+            <h3 class="login-dialog-title">
+                <Chat.QuetzalSidera.Me.Components.Components.ChatText
+                    TextValue="@ConfigData.LangUtils.LeavingMessage.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                    AnimationType="scale"></Chat.QuetzalSidera.Me.Components.Components.ChatText>
+            </h3>
+            <button class="btn-close" @onclick="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="login-form">
+            <button class="btn-submit" @onclick="HandleLogout"
+                    disabled="@IsLoading">
+                <ChatText
+                    TextValue="@ConfigData.LangUtils.LogoutAccount.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                    AnimationType="fade" PictureCss="fas fa-sign-out-alt"
+                    PictureCssAfter="@(IsLoading ? "fas fa-spinner fa-spin" : string.Empty)"></ChatText>
+            </button>
+            <button class="btn-delete" @onclick="HandleDelete"
+                    disabled="@IsLoading">
+                <ChatText
+                    TextValue="@ConfigData.LangUtils.DeleteAccount.ToTextModel().ToLangString(AppStateInstance.CurrentLang)"
+                    AnimationType="fade" PictureCss="fas fa-user-minus"></ChatText>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+
+    private bool IsLoading { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        AppStateInstance.OnLanguageChanged += StateChanged;
+    }
+
+    private async Task StateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task Close()
+    {
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.None;
+        StateHasChanged();
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleLogout()
+    {
+        if (ChatService.AuthToken.IsRegistered)
+        {
+            //向localStorage写入空AuthToken，同时调用ChatService方法删除此AuthToken
+            await ChatService.LogoutAccountAsync(ChatService.AuthToken);
+            
+            try
+            {
+                await ProtectedLocalStorage.SetAsync(AppState.AuthTokenKey, "");
+                await ProtectedLocalStorage.SetAsync(AppState.UserGuidKey, "");
+                await ProtectedLocalStorage.SetAsync(AppState.CreateTimestampKey, 0);
+                await ProtectedLocalStorage.SetAsync(AppState.UserLangKey, "");
+            }
+            catch
+            {
+                //忽略LocalStorage错误
+            }
+        }
+
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.None;
+        StateHasChanged();
+        await VisibleChanged.InvokeAsync(true);
+    }
+
+    private async Task HandleDelete()
+    {
+        AppStateInstance.ShowLoginDialog = AppState.DialogEnum.DeleteConfirm;
+        StateHasChanged();
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+}

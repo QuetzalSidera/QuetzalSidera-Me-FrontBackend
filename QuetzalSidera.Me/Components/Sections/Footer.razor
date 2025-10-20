@@ -1,0 +1,99 @@
+@using Grpc.Client.Www
+@using Grpc.Share.Tools
+@using Grpc.Share.Protos.WwwModels.Foot
+@using Protobuf.Shared.Text
+@using Protobuf.Www.Foot
+@using QuetzalSidera.Me.Models
+@using QuetzalSidera.Me.Components.Components
+@inject FooterDataService FooterDataService
+@inject AppState AppState
+@rendermode InteractiveServer
+<!-- 页脚 -->
+@if (_footData != null)
+{
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    @foreach (LinkSectionModel sectionModel in _footData?.Section ?? [])
+                    {
+                        @if (sectionModel.Type == SectionType.Normal)
+                        {
+                            <div class="footer-column">
+                                <h3>
+                                    <Text TextValue="@sectionModel.SectionTitle.ToLangString(AppState.LangTypeInstance)"
+                                          AnimationType="scale"></Text>
+                                </h3>
+                                <ul class="footer-links-list">
+                                    @foreach (LinkItemModel linkItem in sectionModel.ItemList)
+                                    {
+                                        <li>
+                                            <a href="@linkItem.Link"><i class="@linkItem.PictureCss"></i>
+                                                <Text
+                                                    TextValue="@linkItem.ItemTitle.ToLangString(AppState.LangTypeInstance)"
+                                                    AnimationType="fade"></Text>
+                                            </a></li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="footer-column">
+                    <h3>
+                        <Text TextValue="@_snsSection?.SectionTitle.ToLangString(AppState.LangTypeInstance)"
+                              AnimationType="scale"></Text>
+                    </h3>
+                    @foreach (var snsRow in _snsRowList ?? [])
+                    {
+                        <div class="social-row">
+                            <div class="social-icons">
+                                @foreach (var snsItem in snsRow)
+                                {
+                                    <a href="@snsItem.Link"><i class="@snsItem.PictureCss"></i></a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="copyright">
+                <p><a href="@_footData?.FootComment.Link">
+                        <Text
+                            TextValue="@_footData?.FootComment.FootComment.ToLangString(AppState.LangTypeInstance)"
+                            AnimationType="fade"></Text>
+                    </a>
+                </p>
+            </div>
+        </div>
+    </footer>
+}
+
+@code{
+    FootModel? _footData;
+
+    /// <summary>
+    /// 将Sns链接整理为四个一行
+    /// </summary>
+    List<List<LinkItemModel>>? _snsRowList;
+
+    LinkSectionModel? _snsSection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _footData = await FooterDataService.GetFootAsync();
+        AppState.OnLanguageChanged += StateHasChanged;
+        if (_footData != null)
+        {
+            _snsSection = _footData.Section.FirstOrDefault(s => s.Type == SectionType.Sns);
+            var snsItemList = _snsSection?.ItemList.ToList();
+            _snsRowList = snsItemList?.Select((item, index) => new { item, index })
+                .GroupBy(x => x.index / 4)
+                .Select(group => group.Select(x => x.item).ToList())
+                .ToList();
+        }
+
+        StateHasChanged();
+    }
+
+}

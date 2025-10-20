@@ -1,0 +1,46 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.Foot";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Shared/Text.proto";
+service Foot {
+  //GET
+  rpc GetFoot(google.protobuf.Empty)returns(FootDto);
+
+  //ADD REMOVE MODIFY Link
+  rpc AddLink(LinkItemDto)returns(shared.Status);
+  rpc RemoveLink(LinkItemDto)returns(shared.Status);
+  rpc ModifyLink(LinkItemDto)returns(shared.Status);
+
+  rpc ModifyFootComment(FootCommentDto)returns(shared.Status);
+}
+
+message FootDto{
+  repeated LinkSectionDto section = 1;
+  FootCommentDto foot_comment = 2;
+}
+
+message LinkSectionDto{
+  SectionType type = 1;
+  shared.Text section_title = 2;
+  repeated LinkItemDto ItemList = 3;
+}
+
+message FootCommentDto{
+  shared.Text foot_comment = 2;
+  string link=1;
+}
+
+message LinkItemDto{
+  shared.Text section_title = 1;
+  shared.Text item_title = 2;//section_id为sns的id时，此项无文本
+  string picture_css = 3;
+  string link = 5;
+}
+
+enum SectionType{
+  NORMAL = 0;
+  SNS = 1;
+}

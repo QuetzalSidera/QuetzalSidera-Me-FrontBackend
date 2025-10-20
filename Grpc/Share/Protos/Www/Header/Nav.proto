@@ -1,0 +1,26 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.Header.Nav";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+import "Share/Protos/Shared/Text.proto";
+service Nav {
+  rpc GetNavList (google.protobuf.Empty) returns (NavDto);
+  //  传入的id为空串即可
+  rpc AddNavItem(NavItemDto) returns(shared.Status);
+  //  传入的id不为空串
+  rpc RemoveNavItem(NavItemDto)returns(shared.Status);
+  //  传入的id不为空串
+  rpc ModifyNavItem(NavItemDto)returns(shared.Status);
+}
+
+message NavDto{
+  repeated NavItemDto NavItems = 1;
+}
+
+message NavItemDto {
+  string link = 2;
+  shared.Text name = 3;
+  string picture_css = 4;
+}

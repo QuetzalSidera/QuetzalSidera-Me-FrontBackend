@@ -1,0 +1,27 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Api";
+
+package api;
+import "Share/Protos/Www/Content/Content.proto";
+import "Share/Protos/Shared/Status.proto";
+import "google/protobuf/empty.proto";
+service CheckListService{
+  rpc AddCheckList(FriendCardCheckListItem)returns(FriendsCardGuid);
+  rpc CheckStatus(FriendsCardGuid)returns(shared.Status);
+  rpc PassCheck(FriendsCardGuid)returns(shared.Status);
+  rpc RejectCheck(FriendsCardGuid)returns(shared.Status);
+  rpc GetFriendCards(google.protobuf.Empty)returns(FriendCardCheckList);
+}
+
+message FriendsCardGuid{
+  string guid = 1;
+}
+message FriendCardCheckList{
+  repeated FriendCardCheckListItem check_list = 1;
+}
+
+message FriendCardCheckListItem{
+  www.FriendsCard FriendCard = 1;
+  string guid = 2;
+  string add_on = 3;
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+option csharp_namespace = "Protobuf.Www.Header.Weather";
+
+package www;
+import "google/protobuf/empty.proto";
+import "Share/Protos/Shared/Status.proto";
+service Weather {
+  rpc GetWeather(google.protobuf.Empty)  returns (WeatherDto);
+  rpc ModifyLocation(LocationDto) returns (shared.Status);
+}
+
+// 天气状况
+message WeatherDto {
+  //由于location依赖第三方API。因此做不到切换语言
+  LocationDto location = 1;
+  //天气情况（晴朗）
+  string weather_info = 2;
+  string weather_picture_css = 3;
+  //温度
+  string temp = 4;
+  //湿度
+  string humidity = 5;
+  //风速
+  string wind_speed = 6;
+}
+
+// 地区
+message LocationDto {
+  string location = 1;
+}

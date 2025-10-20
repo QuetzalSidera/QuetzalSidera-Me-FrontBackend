@@ -1,0 +1,149 @@
+@using Chat.QuetzalSidera.Me.AppState
+@inject AppState AppStateInstance
+<div class="smooth-text-container text-container">
+    <span
+        class="@(UserOnClick == null ? "smooth-text-container smooth-text" : "smooth-text-container smooth-text-switch")"
+        style="@_textStyle" @onclick="OnClick">
+        <i class="@PictureCss"></i>@DisplayText <i class="@PictureCssAfter"></i>
+    </span>
+</div>
+
+<style>
+    .smooth-text-container {
+        text-align: inherit;
+        display: inherit;
+        vertical-align: @MaxWidth;
+    }
+</style>
+
+@code {
+    [Parameter] public string TextValue { get; set; } = string.Empty;
+
+    [Parameter] public EventCallback<string> TextChanged { get; set; }
+
+    [Parameter] public EventCallback OnTextUpdated { get; set; }
+
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter] public string Style { get; set; } = "";
+
+    [Parameter] public int AnimationDuration { get; set; } = 300;
+
+    [Parameter] public string AnimationType { get; set; } = "fade";
+    [Parameter] public Action? UserOnClick { get; set; }
+
+    [Parameter] public string MaxWidth { get; set; } = "inherit";
+    [Parameter] public string PictureCss { get; set; } = string.Empty;
+    [Parameter] public string PictureCssAfter { get; set; } = string.Empty;
+    private string _previousText = string.Empty;
+    private string _currentText = string.Empty;
+    private string _displayText = string.Empty;
+    private string _textStyle = "";
+    private bool _isAnimating = false;
+
+    public string DisplayText => _displayText;
+
+
+    protected override void OnInitialized()
+    {
+        AppStateInstance.OnLanguageChanged += StateChanged;
+        _currentText = TextValue;
+        _displayText = TextValue;
+        UpdateTextStyle();
+    }
+
+    private async Task StateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TextValue != _currentText && !_isAnimating)
+        {
+            _previousText = _currentText;
+            _currentText = TextValue;
+            await StartAnimation();
+        }
+    }
+
+    private async Task StartAnimation()
+    {
+        _isAnimating = true;
+
+        // 开始动画
+        _textStyle = GetAnimationStyle(true);
+        StateHasChanged();
+
+        // 等待动画完成一半
+        await Task.Delay(AnimationDuration / 2);
+
+        // 更新文本
+        _displayText = _currentText;
+        StateHasChanged();
+
+        // 等待文本更新后的动画
+        await Task.Delay(AnimationDuration / 2);
+
+        // 结束动画
+        _textStyle = GetAnimationStyle(false);
+        _isAnimating = false;
+
+        // 通知父组件文本已更新
+        if (OnTextUpdated.HasDelegate)
+        {
+            await OnTextUpdated.InvokeAsync();
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetAnimationStyle(bool isStarting)
+    {
+        var duration = $"{AnimationDuration}ms";
+
+        return AnimationType.ToLower() switch
+        {
+            "fade" => isStarting ? $"opacity: 0; transition: all {duration} ease-in-out;" : $"opacity: 1; transition: all {duration} ease-in-out;",
+
+            "slide" => isStarting ? $"transform: translateY(-10px); opacity: 0; transition: all {duration} ease-in-out;" : $"transform: translateY(0); opacity: 1; transition: all {duration} ease-in-out;",
+
+            "scale" => isStarting ? $"transform: scale(0.8); opacity: 0; transition: all {duration} ease-in-out;" : $"transform: scale(1); opacity: 1; transition: all {duration} ease-in-out;",
+
+            // "typing" => isStarting ? $"width: 0; overflow: hidden; white-space: nowrap; transition: width {duration} steps({_currentText.Length}, end);" : $"width: {GetTextWidth()}ch; overflow: hidden; white-space: nowrap; transition: width {duration} steps({_currentText.Length}, end);",
+            "typing" => isStarting ? $"transform: translateY(-10px); opacity: 0; transition: all {duration} ease-in-out;" : $"transform: translateY(0); opacity: 1; transition: all {duration} ease-in-out;",
+
+            _ => isStarting ? $"opacity: 0; transition: all {duration} ease-in-out;" : $"opacity: 1; transition: all {duration} ease-in-out;"
+        };
+    }
+
+    private void UpdateTextStyle()
+    {
+        _textStyle = GetAnimationStyle(false);
+    }
+
+    [JSInvokable]
+    public async Task UpdateTextAsync(string newText)
+    {
+        if (newText != _currentText)
+        {
+            TextValue = newText;
+            if (TextChanged.HasDelegate)
+            {
+                await TextChanged.InvokeAsync(TextValue);
+            }
+        }
+    }
+
+    private void OnClick()
+    {
+        UserOnClick?.Invoke();
+        // 可以添加点击效果
+    }
+
+    public void Dispose()
+    {
+        AppStateInstance.OnLanguageChanged -= StateChanged;
+    }
+
+}

@@ -1,0 +1,152 @@
+@host = https://api.quetzalsidera.me
+
+### 认证令牌相关接口 ###
+
+# 获取认证令牌
+GET {{host}}/v1/authToken?email=1969154690@qq.com&password=Qs@20051022
+Accept: application/json
+
+###
+# "authToken": "fbb8c04b-b67e-4d1a-890a-726d95933db5",
+#"userGuid": "1226447c-1118-4b8a-a231-e9a81e55d8cf",
+# 检查认证状态
+GET {{host}}/v1/authToken/check?user_guid=1226447c-1118-4b8a-a231-e9a81e55d8cf&auth_token=fbb8c04b-b67e-4d1a-890a-726d95933db5
+Accept: application/json
+
+###
+
+### 管理员相关接口 ###
+
+# 获取管理员列表
+GET {{host}}/v1/admins
+Authorization:4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: c00e3b65-20e9-4068-a60d-96a951c4ee16
+Accept: application/json
+
+###
+
+# 添加管理员
+POST {{host}}/v1/admins
+Authorization: 1226447c-1118-4b8a-a231-e9a81e55d8cf
+AuthToken: fbb8c04b-b67e-4d1a-890a-726d95933db5
+Content-Type: multipart/form-data; boundary=boundary_string
+
+--boundary_string
+Content-Disposition: form-data; name="mailBox"
+
+3757015196@qq.com
+--boundary_string--
+
+###
+
+# 删除管理员
+DELETE {{host}}/v1/admins
+Authorization: 1226447c-1118-4b8a-a231-e9a81e55d8cf
+AuthToken: fbb8c04b-b67e-4d1a-890a-726d95933db5
+Content-Type: multipart/form-data; boundary=boundary_string
+
+--boundary_string
+Content-Disposition: form-data; name="mailBox"
+
+3757015196@qq.com
+--boundary_string--
+
+###
+
+### 好友卡片相关接口 ###
+
+# 添加好友卡片
+POST {{host}}/v1/checkList
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Content-Type: application/json
+
+{
+  "link": "https://example.com/friend-profile",
+  "pictureLink": "https://example.com/images/profile-pic.jpg",
+  "title": {
+    "zhCn": "张三的个人主页",
+    "enUs": "Zhang San's Profile",
+    "zhHk": "张四的个人主页",
+    "zhTw": "张四的个人主页",
+    "enGb": "Zhang San's Profile",
+    "jaJp": "张四的个人主页"
+  },
+  "comment": {
+    "zhCn": "这是一个很好的朋友，我们认识多年",
+    "enUs": "This is a good friend, we've known each other for years",
+    "zhHk": "這是一個很好的朋友，我們認識多年",
+    "zhTw": "這是一個很好的朋友，我們認識多年",
+    "enGb": "This is a good friend, we've known each other for years",
+    "jaJp": "これは良い友人で、長年知り合いです"
+  },
+  "addOn": "额外信息或备注内容"
+}
+
+###
+# 获取卡片列表
+GET {{host}}/v1/checkList/all
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###
+
+
+# 检查卡片状态
+GET {{host}}/v1/checkList?cardGuid=45a92569-12d5-4ff0-92e0-0449c5c9ed2b
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###
+
+# 拒绝卡片审核
+DELETE {{host}}/v1/checkList?cardGuid=45a92569-12d5-4ff0-92e0-0449c5c9ed2b
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###
+
+# 通过卡片审核
+POST {{host}}/v1/checkList?cardGuid=c4a1c020-9da5-487f-9d94-445b52dd14c
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###
+
+### 位置信息相关接口 ###
+
+# 获取位置信息
+GET {{host}}/v1/myLocation
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###
+
+# 修改位置信息
+POST {{host}}/v1/myLocation
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Content-Type: multipart/form-data; boundary=location_boundary
+
+--location_boundary
+Content-Disposition: form-data; name="location"
+
+深圳
+--location_boundary--
+
+###
+
+### 元数据相关接口 ###
+
+# 获取用户数量
+GET {{host}}/v1/userNum
+Authorization: 4254bf69-a6d2-4602-872d-1d1546b25869
+AuthToken: a4f95186-854b-4f7f-b7e3-f4b3d714b921
+Accept: application/json
+
+###

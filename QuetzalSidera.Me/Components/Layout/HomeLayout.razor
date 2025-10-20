@@ -1,0 +1,12 @@
+@inherits LayoutComponentBase
+@using Grpc.Share.Config.Www
+@using QuetzalSidera.Me.Components.Components
+@using QuetzalSidera.Me.Components.Sections
+<Header></Header>
+<main class="container">
+    <SideNav Path="@ConfigData.PathConfig.RootPath"></SideNav>
+    <div class="content">
+        @Body
+    </div>
+</main>
+<Footer></Footer>

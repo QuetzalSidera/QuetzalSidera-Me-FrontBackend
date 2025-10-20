@@ -1,0 +1,153 @@
+# .gitignore for ASP.NET Blazor Web App with Docker
+
+## Global ignores
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+## Visual Studio
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+
+## NuGet
+[Nn]uget/
+*.nupkg
+packages/
+.nuget/
+nuget.exe
+
+## Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.vs.debug.yml
+docker-compose.vs.release.yml
+
+## Project specific
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+appsettings.Staging.json
+
+## ASP.NET Core
+appsettings.*.json
+*.db
+*.db-shm
+*.db-wal
+/Migrations/
+/Migration/
+/MigrationBackup/
+
+## Logs
+*.log
+*.log.*
+logs/
+[Ll]og/
+[Ll]ogs/
+
+## Runtime data
+publish/
+[Aa]spnetcore-compile/
+
+## Caddy
+Caddy/.caddy/
+Caddy/caddy_data/
+Caddy/caddy_config/
+
+## FRP (for backendrpc)
+frpc.ini
+frpc.log
+frps.ini
+frps.log
+
+## SSL certificates
+*.pfx
+*.pem
+*.crt
+*.key
+*.csr
+
+## Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+## IDE
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+## OS generated files
+[Tt]humbs.db
+*.lnk
+
+## Code coverage
+coverage.xml
+coverage.json
+*.coverage
+*.coveragexml
+
+## Performance logs
+*.etl
+*.trace
+*.perflog
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## Backup & swap files
+*.bak
+*.tmp
+*.temp
+*~
+
+## Package files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+## Local development
+.localhistory/
+
+## Blazor specific
+blazor.boot.json
+blazor-hotreload
+*.blazor*
+
+## Rider
+*.sln.iml
+
+## Output of 'dotnet watch'
+**/__dotnet_watch__*
+
+## End of https://www.toptal.com/developers/gitignore/api/dotnet,visualstudio,visualstudiocode
